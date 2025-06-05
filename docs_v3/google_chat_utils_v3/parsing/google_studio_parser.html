@@ -1,0 +1,863 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.6">
+<title>google_chat_utils_v3.parsing.google_studio_parser API documentation</title>
+<meta name="description" content="">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>google_chat_utils_v3.parsing.google_studio_parser</code></h1>
+</header>
+<section id="section-intro">
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="google_chat_utils_v3.parsing.google_studio_parser.load_json_file"><code class="name flex">
+<span>def <span class="ident">load_json_file</span></span>(<span>file_path: str) ‑> Dict[str, Any] | None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def load_json_file(file_path: str) -&gt; Optional[Dict[str, Any]]:
+    &#34;&#34;&#34;
+    Reads a JSON-file from the specified path.
+    Returns the content as a Python dictionary or None if error.
+    (Adapted from parser_v2.py)
+    &#34;&#34;&#34;
+    try:
+        with open(file_path, &#39;r&#39;, encoding=&#39;utf-8&#39;) as f:
+            data = json.load(f)
+        return data
+    except FileNotFoundError:
+        # print(f&#34;Error: File not found at {file_path}&#34;) # Consider logging instead of printing
+        return None
+    except json.JSONDecodeError:
+        # print(f&#34;Error: Could not decode JSON from file {file_path}&#34;)
+        return None
+    except Exception as e:
+        # print(f&#34;An unexpected error occurred while loading {file_path}: {e}&#34;)
+        return None</code></pre>
+</details>
+<div class="desc"><p>Reads a JSON-file from the specified path.
+Returns the content as a Python dictionary or None if error.
+(Adapted from parser_v2.py)</p></div>
+</dd>
+</dl>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="google_chat_utils_v3.parsing.google_studio_parser.GoogleAIStudioJSONParser"><code class="flex name class">
+<span>class <span class="ident">GoogleAIStudioJSONParser</span></span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class GoogleAIStudioJSONParser:
+    &#34;&#34;&#34;
+    Parses Google AI Studio JSON chat exports into an IntermediateChatData object.
+    &#34;&#34;&#34;
+    def __init__(self):
+        &#34;&#34;&#34;
+        Initializes the parser.
+        # self.schema_transformer = SchemaTransformer() # If needed for schema conversion
+        &#34;&#34;&#34;
+        pass
+
+    def _parse_schema_data(self, schema_dict: Dict[str, Any]) -&gt; SchemaData:
+        &#34;&#34;&#34;
+        Converts a JSON schema dictionary (from Google AI Studio export, assumed to be Gemini-like)
+        into a SchemaData object.
+        Google AI Studio&#39;s function parameter schemas and response schemas are already
+        in a format that is quite close to Gemini API&#39;s schema structure.
+        Types are typically uppercase (e.g., &#34;STRING&#34;, &#34;OBJECT&#34;).
+        &#34;&#34;&#34;
+        if not isinstance(schema_dict, dict):
+            # This is an error condition, schema_dict should always be a dictionary.
+            # print(f&#34;Warning: _parse_schema_data expected a dict, got {type(schema_dict)}. Returning default schema.&#34;)
+            return SchemaData(type=&#34;STRING&#34;, description=&#34;Error: Invalid schema format.&#34;)
+
+        # Directly map Google AI Studio schema to SchemaData fields.
+        # Ensure type is uppercase as per SchemaData expectation if source varies.
+        schema_type = str(schema_dict.get(&#34;type&#34;, &#34;STRING&#34;)).upper() # Default to STRING
+
+        properties = None
+        if &#34;properties&#34; in schema_dict and isinstance(schema_dict[&#34;properties&#34;], dict):
+            properties = {
+                key: self._parse_schema_data(value)
+                for key, value in schema_dict[&#34;properties&#34;].items()
+            }
+
+        items_schema = None
+        if &#34;items&#34; in schema_dict and isinstance(schema_dict[&#34;items&#34;], dict):
+            items_schema = self._parse_schema_data(schema_dict[&#34;items&#34;])
+
+        return SchemaData(
+            type=schema_type,
+            description=schema_dict.get(&#34;description&#34;),
+            nullable=schema_dict.get(&#34;nullable&#34;, False), # Default nullable to False
+            properties=properties,
+            items=items_schema,
+            enum=schema_dict.get(&#34;enum&#34;),
+            required=schema_dict.get(&#34;required&#34;)
+        )
+
+    def _parse_function_definition(self, func_decl_dict: Dict[str, Any]) -&gt; FunctionDefinition:
+        &#34;&#34;&#34;
+        Parses a function declaration dictionary into a FunctionDefinition object.
+        &#34;&#34;&#34;
+        name = func_decl_dict.get(&#34;name&#34;, &#34;&#34;)
+        description = func_decl_dict.get(&#34;description&#34;, &#34;&#34;)
+
+        # &#39;parameters&#39; in Google AI Studio&#39;s export holds the JSON schema for parameters
+        parameters_json_schema = func_decl_dict.get(&#34;parameters&#34;, {&#34;type&#34;: &#34;OBJECT&#34;, &#34;properties&#34;: {}}) # Default to empty object schema
+
+        # Ensure parameters_json_schema is a dict before parsing
+        if not isinstance(parameters_json_schema, dict):
+            # print(f&#34;Warning: &#39;parameters&#39; for function {name} is not a dict. Using default empty schema.&#34;)
+            parameters_json_schema = {&#34;type&#34;: &#34;OBJECT&#34;, &#34;properties&#34;: {}}
+
+        parameters_schema_data = self._parse_schema_data(parameters_json_schema)
+
+        return FunctionDefinition(
+            name=name,
+            description=description,
+            parameters_schema=parameters_schema_data
+        )
+
+    def _parse_run_settings(self, raw_data: Dict[str, Any]) -&gt; RunSettingsData:
+        &#34;&#34;&#34;
+        Extracts and transforms run settings from the raw JSON data into RunSettingsData.
+        (Adapted from extract_run_settings in parser_v2.py)
+        &#34;&#34;&#34;
+        run_settings_source = raw_data.get(&#39;runSettings&#39;, {})
+        if not isinstance(run_settings_source, dict):
+            run_settings_source = {} # Ensure it&#39;s a dict to prevent errors
+
+        response_schema_obj: Optional[SchemaData] = None
+        if &#39;responseSchema&#39; in run_settings_source and isinstance(run_settings_source[&#39;responseSchema&#39;], dict):
+            response_schema_obj = self._parse_schema_data(run_settings_source[&#39;responseSchema&#39;])
+
+        func_declarations: Optional[List[FunctionDefinition]] = None
+        if &#39;functionDeclarations&#39; in run_settings_source and isinstance(run_settings_source[&#39;functionDeclarations&#39;], list):
+            func_declarations = [
+                self._parse_function_definition(f_decl)
+                for f_decl in run_settings_source[&#39;functionDeclarations&#39;]
+                if isinstance(f_decl, dict) # Ensure each declaration is a dict
+            ]
+
+        return RunSettingsData(
+            model=run_settings_source.get(&#39;model&#39;),
+            temperature=run_settings_source.get(&#39;temperature&#39;),
+            top_p=run_settings_source.get(&#39;topP&#39;),
+            top_k=run_settings_source.get(&#39;topK&#39;),
+            max_output_tokens=run_settings_source.get(&#39;maxOutputTokens&#39;),
+            response_mime_type=run_settings_source.get(&#39;responseMimeType&#39;),
+            response_schema=response_schema_obj,
+            function_declarations=func_declarations,
+            enable_code_execution=run_settings_source.get(&#39;enableCodeExecution&#39;, False),
+            enable_search_as_tool=run_settings_source.get(&#39;enableSearchAsATool&#39;, False), # Matches parser_v2 key
+            enable_browse_as_tool=run_settings_source.get(&#39;enableBrowseAsATool&#39;, False), # Matches parser_v2 key
+            raw_settings=run_settings_source # Store the original dict too
+        )
+
+    def _parse_system_instruction(self, raw_data: Dict[str, Any]) -&gt; Optional[SystemInstruction]:
+        &#34;&#34;&#34;
+        Extracts system instruction from the raw JSON data.
+        (Adapted from extract_system_instruction in parser_v2.py)
+        &#34;&#34;&#34;
+        system_instruction_data = raw_data.get(&#39;systemInstruction&#39;)
+        if isinstance(system_instruction_data, dict) and &#39;text&#39; in system_instruction_data:
+            # Assuming &#39;text&#39; field contains the instruction.
+            # If source or other fields are present, they can be added to SystemInstruction class.
+            return SystemInstruction(text=system_instruction_data[&#39;text&#39;])
+        elif isinstance(system_instruction_data, str): # Handle plain string if that&#39;s possible
+             return SystemInstruction(text=system_instruction_data)
+        return None
+
+
+    def _parse_tool_configuration(self, run_settings: RunSettingsData) -&gt; List[ToolConfiguration]:
+        &#34;&#34;&#34;
+        Creates a list of ToolConfiguration objects based on RunSettingsData.
+        (Adapted from extract_tools_info in parser_v2.py)
+        &#34;&#34;&#34;
+        configs = []
+        if run_settings.enable_code_execution:
+            configs.append(ToolConfiguration(type=&#34;code_execution&#34;))
+
+        if run_settings.function_declarations:
+            # Create a single ToolConfiguration for all function declarations
+            # This matches the structure of genai.Tool(function_declarations=[...])
+            # and how tools_info was structured if functions were present.
+            configs.append(ToolConfiguration(type=&#34;function_declaration&#34;, functions=run_settings.function_declarations))
+
+        if run_settings.enable_search_as_tool: # Assuming this implies Google Search
+            configs.append(ToolConfiguration(type=&#34;google_search_enabled&#34;)) # Type name from parser_v2
+
+        if run_settings.enable_browse_as_tool:
+            configs.append(ToolConfiguration(type=&#34;browse_enabled&#34;)) # Type name from parser_v2
+
+        return configs
+
+    def _parse_chat_message_part(self, part_data: Dict[str, Any], owner_role: str = &#34;unknown&#34;, is_thought_chunk: bool = False) -&gt; Optional[ChatMessagePart]:
+        &#34;&#34;&#34;
+        Parses a single part from a chunk into a ChatMessagePart object.
+        Adapted from parser_v2.py&#39;s parse_part.
+        The &#39;owner_role&#39; and &#39;is_thought_chunk&#39; are contextual hints from the parent chunk.
+        &#34;&#34;&#34;
+        if not isinstance(part_data, dict):
+            return None
+
+        if &#39;text&#39; in part_data:
+            # Context (role, isThought) determines if it&#39;s TextPart, ThoughtsPart, or (model&#39;s) TextPart.
+            # This method creates a generic TextPart; _parse_dialogue_history will refine it.
+            # Or, we can pass context here. Let&#39;s pass context.
+            if owner_role == &#34;model&#34; and is_thought_chunk:
+                 return ThoughtsPart(content=part_data[&#39;text&#39;])
+            # In parser_v2, &#39;text_response&#39; was a type applied later. Here, TextPart can cover model&#39;s textual response.
+            return TextPart(content=part_data[&#39;text&#39;])
+
+        # Multimodal inputs
+        if &#39;driveImage&#39; in part_data and isinstance(part_data[&#39;driveImage&#39;], dict):
+            return UriReferencePart(source_type=&#34;google_drive_image&#34;, identifier=part_data[&#39;driveImage&#39;].get(&#39;id&#39;))
+        if &#39;driveDocument&#39; in part_data and isinstance(part_data[&#39;driveDocument&#39;], dict):
+            return UriReferencePart(source_type=&#34;google_drive_document&#34;, identifier=part_data[&#39;driveDocument&#39;].get(&#39;id&#39;))
+        if &#39;sampleImageId&#39; in part_data:
+            return UriReferencePart(source_type=&#34;sample_image&#34;, identifier=part_data[&#39;sampleImageId&#39;])
+        if &#39;youtubeVideo&#39; in part_data and isinstance(part_data[&#39;youtubeVideo&#39;], dict):
+            return UriReferencePart(source_type=&#34;youtube_video&#34;, identifier=part_data[&#39;youtubeVideo&#39;].get(&#39;id&#39;))
+        if &#39;driveVideo&#39; in part_data and isinstance(part_data[&#39;driveVideo&#39;], dict):
+            return UriReferencePart(source_type=&#34;google_drive_video&#34;, identifier=part_data[&#39;driveVideo&#39;].get(&#39;id&#39;))
+
+        if &#39;inlineData&#39; in part_data and isinstance(part_data[&#39;inlineData&#39;], dict):
+            inline_data = part_data[&#39;inlineData&#39;]
+            return InlineDataPart(mime_type=inline_data.get(&#39;mimeType&#39;), base64_data=inline_data.get(&#39;data&#39;))
+
+        if &#39;fileData&#39; in part_data and isinstance(part_data[&#39;fileData&#39;], dict):
+            file_data = part_data[&#39;fileData&#39;]
+            if &#39;fileUri&#39; in file_data:
+                 return UriReferencePart(
+                     source_type=&#34;file_uri&#34;,
+                     identifier=file_data[&#39;fileUri&#39;],
+                     mime_type=file_data.get(&#39;mimeType&#39;)
+                 )
+
+        # Model response parts (tool related)
+        if &#39;executableCode&#39; in part_data and isinstance(part_data[&#39;executableCode&#39;], dict):
+            ec = part_data[&#39;executableCode&#39;]
+            # Language is not directly in &#39;executableCode&#39; part in Studio JSON, assume PYTHON or allow override
+            return ExecutableCodePart(code_content=ec.get(&#39;code&#39;, &#39;&#39;), language=&#34;PYTHON&#34;) # Defaulting to PYTHON
+
+        if &#39;codeExecutionResult&#39; in part_data and isinstance(part_data[&#39;codeExecutionResult&#39;], dict):
+            cer = part_data[&#39;codeExecutionResult&#39;]
+            return CodeExecutionResultPart(outcome=cer.get(&#39;outcome&#39;, &#39;OUTCOME_OK&#39;), output_content=cer.get(&#39;output&#39;, &#39;&#39;))
+
+        if &#39;functionCall&#39; in part_data and isinstance(part_data[&#39;functionCall&#39;], dict):
+            fc = part_data[&#39;functionCall&#39;]
+            return FunctionCallPart(name=fc.get(&#39;name&#39;), args=fc.get(&#39;args&#39;, {}))
+
+        if &#39;functionResponse&#39; in part_data and isinstance(part_data[&#39;functionResponse&#39;], dict):
+            fr_part = part_data[&#39;functionResponse&#39;]
+            # &#39;response&#39; field in a standalone functionResponse part (not from resolvedFunctionCall)
+            # is typically already a dictionary/object.
+            return FunctionResponsePart(name=fr_part.get(&#39;name&#39;), response_content=fr_part.get(&#39;response&#39;, {}))
+
+        # print(f&#34;Warning: Unknown part structure encountered in _parse_chat_message_part: {part_data}&#34;)
+        return None
+
+    def _parse_dialogue_history(self, raw_data: Dict[str, Any]) -&gt; List[DialogueTurn]:
+        &#34;&#34;&#34;
+        Extracts and transforms dialogue history into a list of DialogueTurn objects.
+        Adapted from extract_dialogue_history_v2 in parser_v2.py.
+        &#34;&#34;&#34;
+        processed_history: List[DialogueTurn] = []
+
+        source_chunks = raw_data.get(&#39;chunkedPrompt&#39;, {}).get(&#39;chunks&#39;, [])
+        if not source_chunks and &#39;pendingInputs&#39; in raw_data: # Check pendingInputs as alternative source
+            source_chunks = raw_data.get(&#39;pendingInputs&#39;, [])
+            if not isinstance(source_chunks, list): # Ensure it&#39;s a list
+                source_chunks = []
+
+        current_model_turn_parts: List[ChatMessagePart] = []
+        current_model_turn_meta: Dict[str, Any] = {} # For finish_reason, token_count, citations for the turn
+
+        def finalize_model_turn():
+            nonlocal current_model_turn_parts, current_model_turn_meta
+            if current_model_turn_parts:
+                turn_to_add = DialogueTurn(
+                    role=&#34;model&#34;,
+                    parts=list(current_model_turn_parts), # Take a copy
+                    finish_reason=current_model_turn_meta.get(&#39;finish_reason&#39;),
+                    token_count=current_model_turn_meta.get(&#39;token_count&#39;),
+                    citations=current_model_turn_meta.get(&#39;citations&#39;)
+                    # turn_id can be added if available or generated
+                )
+                processed_history.append(turn_to_add)
+                current_model_turn_parts.clear()
+                current_model_turn_meta.clear()
+
+        for chunk_index, chunk in enumerate(source_chunks):
+            if not isinstance(chunk, dict):
+                continue
+
+            role = chunk.get(&#39;role&#39;)
+            is_thought_chunk = chunk.get(&#39;isThought&#39;, False)
+            chunk_token_count = chunk.get(&#39;tokenCount&#39;)
+            chunk_citations = chunk.get(&#39;citations&#39;) # List of dicts
+            chunk_finish_reason = chunk.get(&#39;finishReason&#39;)
+
+            current_chunk_extracted_parts: List[ChatMessagePart] = []
+
+            # Handle resolvedFunctionCall first (contains both call and response)
+            if role == &#34;model&#34; and &#39;resolvedFunctionCall&#39; in chunk and isinstance(chunk[&#39;resolvedFunctionCall&#39;], dict):
+                rfc = chunk[&#39;resolvedFunctionCall&#39;]
+                fc_data_from_rfc = rfc.get(&#39;functionCall&#39;)
+                fr_json_string = rfc.get(&#39;response&#39;)
+
+                if isinstance(fc_data_from_rfc, dict) and &#39;name&#39; in fc_data_from_rfc:
+                    # Attempt to remove a pre-existing FunctionCallPart from current_model_turn_parts
+                    # if this resolvedFunctionCall corresponds to it, to avoid duplication.
+                    call_name_from_rfc = fc_data_from_rfc.get(&#39;name&#39;)
+                    for i, part_in_model_turn in reversed(list(enumerate(current_model_turn_parts))):
+                        if isinstance(part_in_model_turn, FunctionCallPart) and part_in_model_turn.name == call_name_from_rfc:
+                            # To be more precise, one might also compare args if available and simple enough.
+                            # For now, matching by name is the primary heuristic used in parser_v2.
+                            current_model_turn_parts.pop(i)
+                            break
+
+                    # Add the FunctionCall from resolvedFunctionCall itself
+                    current_chunk_extracted_parts.append(FunctionCallPart(name=call_name_from_rfc, args=fc_data_from_rfc.get(&#39;args&#39;, {})))
+
+                    response_content_dict = {}
+                    if isinstance(fr_json_string, str):
+                        try:
+                            response_content_dict = json.loads(fr_json_string)
+                        except json.JSONDecodeError:
+                            response_content_dict = {&#34;error&#34;: &#34;Failed to parse response JSON&#34;, &#34;raw_response&#34;: fr_json_string}
+                    else:
+                         response_content_dict = {&#34;error&#34;: &#34;Response was not a JSON string&#34;, &#34;raw_response&#34;: fr_json_string}
+
+                    current_chunk_extracted_parts.append(FunctionResponsePart(name=call_name_from_rfc, response_content=response_content_dict))
+
+            # Process parts from the &#39;parts&#39; array of the chunk
+            # Ensure not to re-process a functionCall if it was part of resolvedFunctionCall handled above for THIS chunk.
+            # However, the main duplication is from previous chunks being merged.
+            chunk_parts_data_raw = chunk.get(&#39;parts&#39;, [])
+            list_of_part_dicts = []
+            if isinstance(chunk_parts_data_raw, list):
+                list_of_part_dicts = chunk_parts_data_raw
+            elif isinstance(chunk_parts_data_raw, dict): # Single part dict
+                list_of_part_dicts = [chunk_parts_data_raw]
+            elif &#39;text&#39; in chunk and not chunk_parts_data_raw: # Simple text directly in chunk
+                 list_of_part_dicts = [{&#39;text&#39;: chunk[&#39;text&#39;]}]
+
+            for part_dict_from_chunk in list_of_part_dicts:
+                if not isinstance(part_dict_from_chunk, dict):
+                    continue
+
+                # Pass role and is_thought_chunk for context to _parse_chat_message_part
+                parsed_part = self._parse_chat_message_part(part_dict_from_chunk, owner_role=role, is_thought_chunk=is_thought_chunk)
+                if parsed_part:
+                    current_chunk_extracted_parts.append(parsed_part)
+
+            # Fallback if no parts extracted but chunk has top-level &#39;text&#39;
+            if not current_chunk_extracted_parts and &#39;text&#39; in chunk and not list_of_part_dicts:
+                # Role context is important here too
+                text_part_fallback = self._parse_chat_message_part({&#39;text&#39;: chunk[&#39;text&#39;]}, owner_role=role, is_thought_chunk=is_thought_chunk)
+                if text_part_fallback:
+                    current_chunk_extracted_parts.append(text_part_fallback)
+
+            # Refine TextPart for model to ThoughtsPart if it&#39;s a thought chunk
+            # This was partially handled in _parse_chat_message_part, but double-check or make logic exclusive.
+            # The current _parse_chat_message_part already creates ThoughtsPart if context is right.
+
+            if role == &#34;user&#34;:
+                finalize_model_turn() # Finalize any pending model turn before a user turn
+                if current_chunk_extracted_parts:
+                    user_turn = DialogueTurn(
+                        role=&#34;user&#34;,
+                        parts=current_chunk_extracted_parts,
+                        token_count=chunk_token_count,
+                        citations=chunk_citations
+                        # turn_id can be added if available
+                    )
+                    processed_history.append(user_turn)
+            elif role == &#34;model&#34;:
+                current_model_turn_parts.extend(current_chunk_extracted_parts)
+                if chunk_finish_reason:
+                    current_model_turn_meta[&#39;finish_reason&#39;] = chunk_finish_reason
+                if chunk_token_count: # Accumulate or update token count for the turn
+                    current_model_turn_meta[&#39;token_count&#39;] = current_model_turn_meta.get(&#39;token_count&#39;, 0) + chunk_token_count
+                if chunk_citations:
+                    if &#39;citations&#39; not in current_model_turn_meta: current_model_turn_meta[&#39;citations&#39;] = []
+                    current_model_turn_meta[&#39;citations&#39;].extend(chunk_citations if isinstance(chunk_citations, list) else [chunk_citations])
+
+                # Determine if model turn should be finalized
+                is_last_chunk = (chunk_index + 1 == len(source_chunks))
+                next_chunk_is_user = False
+                if not is_last_chunk:
+                    next_chunk = source_chunks[chunk_index + 1]
+                    if isinstance(next_chunk, dict) and next_chunk.get(&#39;role&#39;) == &#39;user&#39;:
+                        next_chunk_is_user = True
+
+                if chunk_finish_reason or is_last_chunk or next_chunk_is_user:
+                    finalize_model_turn()
+            else: # Unknown or other roles
+                finalize_model_turn()
+                if current_chunk_extracted_parts:
+                    # print(f&#34;Warning: Chunk with role &#39;{role}&#39; found. Storing as is.&#34;)
+                    processed_history.append(DialogueTurn(role=role or &#34;unknown&#34;, parts=current_chunk_extracted_parts))
+
+        finalize_model_turn() # Finalize any last pending model turn
+        return processed_history
+
+    def to_markdown(self, intermediate_data: IntermediateChatData) -&gt; str:
+        &#34;&#34;&#34;
+        Generates a Markdown string with custom XML-like tags from IntermediateChatData.
+        Adapted from format_markdown_for_rag in parser_v2.py.
+        &#34;&#34;&#34;
+        markdown_parts = []
+        md_add = markdown_parts.append
+
+        md_add(f&#34;# Chat Parse: {intermediate_data.source_file_name}&#34;)
+        md_add(f&#34;Parsed at: {intermediate_data.parsed_at_timestamp}&#34;)
+        md_add(f&#34;Source Platform: {intermediate_data.source_platform}\n&#34;)
+
+        # Generation Settings from RunSettingsData
+        rs = intermediate_data.run_settings
+        md_add(&#34;&lt;generation_settings&gt;&#34;)
+        if rs.model: md_add(f&#34;  &lt;model&gt;{rs.model}&lt;/model&gt;&#34;)
+        if rs.temperature is not None: md_add(f&#34;  &lt;temperature&gt;{rs.temperature}&lt;/temperature&gt;&#34;)
+        if rs.top_p is not None: md_add(f&#34;  &lt;topP&gt;{rs.top_p}&lt;/topP&gt;&#34;) # Note: key is topP in XML
+        if rs.top_k is not None: md_add(f&#34;  &lt;topK&gt;{rs.top_k}&lt;/topK&gt;&#34;)   # Note: key is topK in XML
+        if rs.max_output_tokens is not None: md_add(f&#34;  &lt;maxOutputTokens&gt;{rs.max_output_tokens}&lt;/maxOutputTokens&gt;&#34;)
+        if rs.response_mime_type: md_add(f&#34;  &lt;responseMimeType&gt;{rs.response_mime_type}&lt;/responseMimeType&gt;&#34;)
+
+        if rs.response_schema:
+            # Assuming SchemaData doesn&#39;t have a direct to_json_string method,
+            # we might need SchemaTransformer or a local helper to serialize it for display if needed.
+            # The original parser_v2 used json.dumps on the schema dict.
+            # For now, let&#39;s represent its presence or a summary.
+            # If direct JSON representation is needed, SchemaData would need a method,
+            # or we&#39;d use SchemaTransformer here (gemini_schema_to_openai_dict then json.dumps).
+            # For simplicity, using __repr__ or a summary:
+            schema_for_md = intermediate_data.run_settings.raw_settings.get(&#39;responseSchema&#39;, {})
+            md_add(f&#34;  &lt;response_schema_definition name=&#39;configuredResponseSchema&#39;&gt;&#34;)
+            md_add(&#34;    ```json&#34;)
+            md_add(json.dumps(schema_for_md, indent=2, ensure_ascii=False))
+            md_add(&#34;    ```&#34;)
+            md_add(f&#34;  &lt;/response_schema_definition&gt;&#34;)
+        md_add(&#34;&lt;/generation_settings&gt;\n&#34;)
+
+        # Configured Tools from ToolConfiguration list
+        if intermediate_data.tool_configurations:
+            md_add(&#34;&lt;configured_tools&gt;&#34;)
+            for tool_config in intermediate_data.tool_configurations:
+                if tool_config.type == &#34;code_execution&#34;:
+                    md_add(&#34;  &lt;tool type=&#39;code_execution_enabled&#39; /&gt;&#34;)
+                elif tool_config.type == &#34;google_search_enabled&#34;:
+                    md_add(&#34;  &lt;tool type=&#39;google_search_enabled&#39; /&gt;&#34;)
+                elif tool_config.type == &#34;browse_enabled&#34;:
+                    md_add(&#34;  &lt;tool type=&#39;browse_enabled&#39; /&gt;&#34;)
+                elif tool_config.type == &#34;function_declaration&#34; and tool_config.functions:
+                    md_add(&#34;  &lt;tool type=&#39;function_declarations&#39;&gt;&#34;)
+                    for func_def in tool_config.functions:
+                        # Use raw_settings for original schema representation for now
+                        original_func_decl = next((item for item in rs.raw_settings.get(&#39;functionDeclarations&#39;, []) if item[&#34;name&#34;] == func_def.name), None)
+                        params_schema_for_md = {}
+                        if original_func_decl and &#39;parameters&#39; in original_func_decl:
+                            params_schema_for_md = original_func_decl[&#39;parameters&#39;]
+
+                        md_add(f&#34;    &lt;function name=&#39;{func_def.name}&#39;&gt;&#34;)
+                        md_add(f&#34;      &lt;description&gt;&lt;![CDATA[{func_def.description}]]&gt;&lt;/description&gt;&#34;)
+                        md_add(f&#34;      &lt;parameters_schema name=&#39;{func_def.name}_parameters&#39;&gt;&#34;)
+                        md_add(&#34;        ```json&#34;)
+                        md_add(json.dumps(params_schema_for_md, indent=2, ensure_ascii=False))
+                        md_add(&#34;        ```&#34;)
+                        md_add(f&#34;      &lt;/parameters_schema&gt;&#34;)
+                        md_add(f&#34;    &lt;/function&gt;&#34;)
+                    md_add(&#34;  &lt;/tool&gt;&#34;)
+            md_add(&#34;&lt;/configured_tools&gt;\n&#34;)
+
+        # System Instruction
+        md_add(&#34;&lt;system_instruction&gt;&#34;)
+        if intermediate_data.system_instruction and intermediate_data.system_instruction.text.strip():
+            md_add(intermediate_data.system_instruction.text.strip())
+        else:
+            md_add(&#34;&lt;!-- No system instruction provided --&gt;&#34;)
+        md_add(&#34;&lt;/system_instruction&gt;&#34;)
+
+        # Dialogue History
+        md_add(&#34;&lt;dialogue_history&gt;&#34;)
+        if not intermediate_data.dialogue_history:
+            md_add(&#34;  &lt;!-- No dialogue history available --&gt;&#34;)
+        else:
+            for turn_idx, turn in enumerate(intermediate_data.dialogue_history):
+                turn_id_val = turn.turn_id if turn.turn_id else turn_idx+1
+                md_add(f&#34;  &lt;turn role=&#39;{turn.role}&#39; id=&#39;{turn_id_val}&#39;&gt;&#34;)
+                if not turn.parts:
+                    placeholder = &#34;&lt;!-- Empty turn --&gt;&#34;
+                    if turn.role == &#34;user&#34;: placeholder = f&#39;    &lt;message_text&gt;&lt;!-- Empty user message --&gt;&lt;/message_text&gt;&#39;
+                    elif turn.role == &#34;model&#34;: placeholder = f&#39;    &lt;response_text&gt;&lt;!-- Empty model response --&gt;&lt;/response_text&gt;&#39;
+                    md_add(placeholder)
+                else:
+                    for part_idx, part in enumerate(turn.parts):
+                        if isinstance(part, TextPart):
+                            tag = &#34;message_text&#34; if turn.role == &#34;user&#34; else &#34;response_text&#34;
+                            content_escaped = f&#34;&lt;![CDATA[{part.content}]]&gt;&#34; if tag == &#34;response_text&#34; else part.content
+                            md_add(f&#39;    &lt;{tag}&gt;{content_escaped}&lt;/{tag}&gt;&#39;)
+                        elif isinstance(part, ThoughtsPart):
+                            md_add(f&#39;    &lt;thoughts&gt;&lt;![CDATA[{part.content}]]&gt;&lt;/thoughts&gt;&#39;)
+                        elif isinstance(part, UriReferencePart):
+                            mime_attr = f&#34; mime_type=&#39;{part.mime_type}&#39;&#34; if part.mime_type else &#34;&#34;
+                            md_add(f&#34;    &lt;media_attachment type=&#39;{part.source_type}&#39; identifier=&#39;{part.identifier}&#39;{mime_attr}/&gt;&#34;)
+                        elif isinstance(part, InlineDataPart):
+                            md_add(f&#34;    &lt;media_attachment type=&#39;bytes_data&#39; mime_type=&#39;{part.mime_type}&#39; data_preview=&#39;{part.base64_data[:50]}...&#39;/&gt;&#34;)
+                        elif isinstance(part, ExecutableCodePart):
+                            md_add(f&#34;    &lt;executable_code language=&#39;{part.language}&#39;&gt;&#34;)
+                            md_add(f&#34;      &lt;![CDATA[{part.code_content}]]&gt;&#34;)
+                            md_add(f&#34;    &lt;/executable_code&gt;&#34;)
+                        elif isinstance(part, CodeExecutionResultPart):
+                            md_add(f&#34;    &lt;code_execution_result outcome=&#39;{part.outcome}&#39;&gt;&#34;)
+                            md_add(f&#34;      &lt;output&gt;&lt;![CDATA[{part.output_content}]]&gt;&lt;/output&gt;&#34;)
+                            md_add(f&#34;    &lt;/code_execution_result&gt;&#34;)
+                        elif isinstance(part, FunctionCallPart):
+                            md_add(f&#34;    &lt;function_call name=&#39;{part.name}&#39;&gt;&#34;)
+                            md_add(f&#34;      &lt;arguments&gt;&#34;)
+                            md_add(&#34;        ```json&#34;)
+                            md_add(json.dumps(part.args, indent=2, ensure_ascii=False))
+                            md_add(&#34;        ```&#34;)
+                            md_add(f&#34;      &lt;/arguments&gt;&#34;)
+                            md_add(f&#34;    &lt;/function_call&gt;&#34;)
+                        elif isinstance(part, FunctionResponsePart):
+                            md_add(f&#34;    &lt;function_response name=&#39;{part.name}&#39;&gt;&#34;)
+                            md_add(f&#34;      &lt;response_data&gt;&#34;)
+                            md_add(&#34;        ```json&#34;)
+                            md_add(json.dumps(part.response_content, indent=2, ensure_ascii=False))
+                            md_add(&#34;        ```&#34;)
+                            md_add(f&#34;      &lt;/response_data&gt;&#34;)
+                            md_add(f&#34;    &lt;/function_response&gt;&#34;)
+                        else:
+                            md_add(f&#34;    &lt;unknown_part type=&#39;{type(part).__name__}&#39;&gt;&lt;![CDATA[{str(part)}]]&gt;&lt;/unknown_part&gt;&#34;)
+                md_add(f&#34;  &lt;/turn&gt;&#34;)
+        md_add(&#34;&lt;/dialogue_history&gt;&#34;)
+        return &#34;\n&#34;.join(markdown_parts)
+
+    # --- Main parse method ---
+    def parse(self, file_path_or_data: Union[str, Dict[str, Any]]) -&gt; Optional[IntermediateChatData]:
+        &#34;&#34;&#34;
+        Parses a Google AI Studio JSON file or loaded dictionary into an IntermediateChatData object.
+        &#34;&#34;&#34;
+        raw_data: Optional[Dict[str, Any]]
+        source_file_name = &#34;loaded_dict_data&#34;
+
+        if isinstance(file_path_or_data, str):
+            source_file_name = os.path.basename(file_path_or_data)
+            raw_data = load_json_file(file_path_or_data)
+            if raw_data is None:
+                # print(f&#34;Error: Could not load or parse JSON from file: {file_path_or_data}&#34;)
+                return None
+        elif isinstance(file_path_or_data, dict):
+            raw_data = file_path_or_data
+        else:
+            # print(&#34;Error: Invalid input to parse. Must be file path (str) or data (dict).&#34;)
+            return None
+
+        # Core parsing steps
+        run_settings = self._parse_run_settings(raw_data)
+        system_instruction = self._parse_system_instruction(raw_data)
+
+        # Tool configurations are derived from run_settings
+        tool_configurations = self._parse_tool_configuration(run_settings)
+
+        # Dialogue history parsing (complex, placeholder for now)
+        dialogue_history = self._parse_dialogue_history(raw_data) # Uses placeholder
+
+        parsed_at_ts = datetime.datetime.utcnow().isoformat() + &#34;Z&#34;
+
+        intermediate_data = IntermediateChatData(
+            source_file_name=source_file_name,
+            parsed_at_timestamp=parsed_at_ts,
+            run_settings=run_settings,
+            dialogue_history=dialogue_history,
+            source_platform=&#34;Google AI Studio&#34;, # Default platform
+            system_instruction=system_instruction,
+            tool_configurations=tool_configurations
+        )
+        return intermediate_data</code></pre>
+</details>
+<div class="desc"><p>Parses Google AI Studio JSON chat exports into an IntermediateChatData object.</p>
+<p>Initializes the parser.</p>
+<h1 id="selfschema_transformer-schematransformer-if-needed-for-schema-conversion">self.schema_transformer = SchemaTransformer() # If needed for schema conversion</h1></div>
+<h3>Methods</h3>
+<dl>
+<dt id="google_chat_utils_v3.parsing.google_studio_parser.GoogleAIStudioJSONParser.parse"><code class="name flex">
+<span>def <span class="ident">parse</span></span>(<span>self, file_path_or_data: str | Dict[str, Any]) ‑> <a title="google_chat_utils_v3.core.chat_elements.IntermediateChatData" href="../core/chat_elements.html#google_chat_utils_v3.core.chat_elements.IntermediateChatData">IntermediateChatData</a> | None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def parse(self, file_path_or_data: Union[str, Dict[str, Any]]) -&gt; Optional[IntermediateChatData]:
+    &#34;&#34;&#34;
+    Parses a Google AI Studio JSON file or loaded dictionary into an IntermediateChatData object.
+    &#34;&#34;&#34;
+    raw_data: Optional[Dict[str, Any]]
+    source_file_name = &#34;loaded_dict_data&#34;
+
+    if isinstance(file_path_or_data, str):
+        source_file_name = os.path.basename(file_path_or_data)
+        raw_data = load_json_file(file_path_or_data)
+        if raw_data is None:
+            # print(f&#34;Error: Could not load or parse JSON from file: {file_path_or_data}&#34;)
+            return None
+    elif isinstance(file_path_or_data, dict):
+        raw_data = file_path_or_data
+    else:
+        # print(&#34;Error: Invalid input to parse. Must be file path (str) or data (dict).&#34;)
+        return None
+
+    # Core parsing steps
+    run_settings = self._parse_run_settings(raw_data)
+    system_instruction = self._parse_system_instruction(raw_data)
+
+    # Tool configurations are derived from run_settings
+    tool_configurations = self._parse_tool_configuration(run_settings)
+
+    # Dialogue history parsing (complex, placeholder for now)
+    dialogue_history = self._parse_dialogue_history(raw_data) # Uses placeholder
+
+    parsed_at_ts = datetime.datetime.utcnow().isoformat() + &#34;Z&#34;
+
+    intermediate_data = IntermediateChatData(
+        source_file_name=source_file_name,
+        parsed_at_timestamp=parsed_at_ts,
+        run_settings=run_settings,
+        dialogue_history=dialogue_history,
+        source_platform=&#34;Google AI Studio&#34;, # Default platform
+        system_instruction=system_instruction,
+        tool_configurations=tool_configurations
+    )
+    return intermediate_data</code></pre>
+</details>
+<div class="desc"><p>Parses a Google AI Studio JSON file or loaded dictionary into an IntermediateChatData object.</p></div>
+</dd>
+<dt id="google_chat_utils_v3.parsing.google_studio_parser.GoogleAIStudioJSONParser.to_markdown"><code class="name flex">
+<span>def <span class="ident">to_markdown</span></span>(<span>self,<br>intermediate_data: <a title="google_chat_utils_v3.core.chat_elements.IntermediateChatData" href="../core/chat_elements.html#google_chat_utils_v3.core.chat_elements.IntermediateChatData">IntermediateChatData</a>) ‑> str</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def to_markdown(self, intermediate_data: IntermediateChatData) -&gt; str:
+    &#34;&#34;&#34;
+    Generates a Markdown string with custom XML-like tags from IntermediateChatData.
+    Adapted from format_markdown_for_rag in parser_v2.py.
+    &#34;&#34;&#34;
+    markdown_parts = []
+    md_add = markdown_parts.append
+
+    md_add(f&#34;# Chat Parse: {intermediate_data.source_file_name}&#34;)
+    md_add(f&#34;Parsed at: {intermediate_data.parsed_at_timestamp}&#34;)
+    md_add(f&#34;Source Platform: {intermediate_data.source_platform}\n&#34;)
+
+    # Generation Settings from RunSettingsData
+    rs = intermediate_data.run_settings
+    md_add(&#34;&lt;generation_settings&gt;&#34;)
+    if rs.model: md_add(f&#34;  &lt;model&gt;{rs.model}&lt;/model&gt;&#34;)
+    if rs.temperature is not None: md_add(f&#34;  &lt;temperature&gt;{rs.temperature}&lt;/temperature&gt;&#34;)
+    if rs.top_p is not None: md_add(f&#34;  &lt;topP&gt;{rs.top_p}&lt;/topP&gt;&#34;) # Note: key is topP in XML
+    if rs.top_k is not None: md_add(f&#34;  &lt;topK&gt;{rs.top_k}&lt;/topK&gt;&#34;)   # Note: key is topK in XML
+    if rs.max_output_tokens is not None: md_add(f&#34;  &lt;maxOutputTokens&gt;{rs.max_output_tokens}&lt;/maxOutputTokens&gt;&#34;)
+    if rs.response_mime_type: md_add(f&#34;  &lt;responseMimeType&gt;{rs.response_mime_type}&lt;/responseMimeType&gt;&#34;)
+
+    if rs.response_schema:
+        # Assuming SchemaData doesn&#39;t have a direct to_json_string method,
+        # we might need SchemaTransformer or a local helper to serialize it for display if needed.
+        # The original parser_v2 used json.dumps on the schema dict.
+        # For now, let&#39;s represent its presence or a summary.
+        # If direct JSON representation is needed, SchemaData would need a method,
+        # or we&#39;d use SchemaTransformer here (gemini_schema_to_openai_dict then json.dumps).
+        # For simplicity, using __repr__ or a summary:
+        schema_for_md = intermediate_data.run_settings.raw_settings.get(&#39;responseSchema&#39;, {})
+        md_add(f&#34;  &lt;response_schema_definition name=&#39;configuredResponseSchema&#39;&gt;&#34;)
+        md_add(&#34;    ```json&#34;)
+        md_add(json.dumps(schema_for_md, indent=2, ensure_ascii=False))
+        md_add(&#34;    ```&#34;)
+        md_add(f&#34;  &lt;/response_schema_definition&gt;&#34;)
+    md_add(&#34;&lt;/generation_settings&gt;\n&#34;)
+
+    # Configured Tools from ToolConfiguration list
+    if intermediate_data.tool_configurations:
+        md_add(&#34;&lt;configured_tools&gt;&#34;)
+        for tool_config in intermediate_data.tool_configurations:
+            if tool_config.type == &#34;code_execution&#34;:
+                md_add(&#34;  &lt;tool type=&#39;code_execution_enabled&#39; /&gt;&#34;)
+            elif tool_config.type == &#34;google_search_enabled&#34;:
+                md_add(&#34;  &lt;tool type=&#39;google_search_enabled&#39; /&gt;&#34;)
+            elif tool_config.type == &#34;browse_enabled&#34;:
+                md_add(&#34;  &lt;tool type=&#39;browse_enabled&#39; /&gt;&#34;)
+            elif tool_config.type == &#34;function_declaration&#34; and tool_config.functions:
+                md_add(&#34;  &lt;tool type=&#39;function_declarations&#39;&gt;&#34;)
+                for func_def in tool_config.functions:
+                    # Use raw_settings for original schema representation for now
+                    original_func_decl = next((item for item in rs.raw_settings.get(&#39;functionDeclarations&#39;, []) if item[&#34;name&#34;] == func_def.name), None)
+                    params_schema_for_md = {}
+                    if original_func_decl and &#39;parameters&#39; in original_func_decl:
+                        params_schema_for_md = original_func_decl[&#39;parameters&#39;]
+
+                    md_add(f&#34;    &lt;function name=&#39;{func_def.name}&#39;&gt;&#34;)
+                    md_add(f&#34;      &lt;description&gt;&lt;![CDATA[{func_def.description}]]&gt;&lt;/description&gt;&#34;)
+                    md_add(f&#34;      &lt;parameters_schema name=&#39;{func_def.name}_parameters&#39;&gt;&#34;)
+                    md_add(&#34;        ```json&#34;)
+                    md_add(json.dumps(params_schema_for_md, indent=2, ensure_ascii=False))
+                    md_add(&#34;        ```&#34;)
+                    md_add(f&#34;      &lt;/parameters_schema&gt;&#34;)
+                    md_add(f&#34;    &lt;/function&gt;&#34;)
+                md_add(&#34;  &lt;/tool&gt;&#34;)
+        md_add(&#34;&lt;/configured_tools&gt;\n&#34;)
+
+    # System Instruction
+    md_add(&#34;&lt;system_instruction&gt;&#34;)
+    if intermediate_data.system_instruction and intermediate_data.system_instruction.text.strip():
+        md_add(intermediate_data.system_instruction.text.strip())
+    else:
+        md_add(&#34;&lt;!-- No system instruction provided --&gt;&#34;)
+    md_add(&#34;&lt;/system_instruction&gt;&#34;)
+
+    # Dialogue History
+    md_add(&#34;&lt;dialogue_history&gt;&#34;)
+    if not intermediate_data.dialogue_history:
+        md_add(&#34;  &lt;!-- No dialogue history available --&gt;&#34;)
+    else:
+        for turn_idx, turn in enumerate(intermediate_data.dialogue_history):
+            turn_id_val = turn.turn_id if turn.turn_id else turn_idx+1
+            md_add(f&#34;  &lt;turn role=&#39;{turn.role}&#39; id=&#39;{turn_id_val}&#39;&gt;&#34;)
+            if not turn.parts:
+                placeholder = &#34;&lt;!-- Empty turn --&gt;&#34;
+                if turn.role == &#34;user&#34;: placeholder = f&#39;    &lt;message_text&gt;&lt;!-- Empty user message --&gt;&lt;/message_text&gt;&#39;
+                elif turn.role == &#34;model&#34;: placeholder = f&#39;    &lt;response_text&gt;&lt;!-- Empty model response --&gt;&lt;/response_text&gt;&#39;
+                md_add(placeholder)
+            else:
+                for part_idx, part in enumerate(turn.parts):
+                    if isinstance(part, TextPart):
+                        tag = &#34;message_text&#34; if turn.role == &#34;user&#34; else &#34;response_text&#34;
+                        content_escaped = f&#34;&lt;![CDATA[{part.content}]]&gt;&#34; if tag == &#34;response_text&#34; else part.content
+                        md_add(f&#39;    &lt;{tag}&gt;{content_escaped}&lt;/{tag}&gt;&#39;)
+                    elif isinstance(part, ThoughtsPart):
+                        md_add(f&#39;    &lt;thoughts&gt;&lt;![CDATA[{part.content}]]&gt;&lt;/thoughts&gt;&#39;)
+                    elif isinstance(part, UriReferencePart):
+                        mime_attr = f&#34; mime_type=&#39;{part.mime_type}&#39;&#34; if part.mime_type else &#34;&#34;
+                        md_add(f&#34;    &lt;media_attachment type=&#39;{part.source_type}&#39; identifier=&#39;{part.identifier}&#39;{mime_attr}/&gt;&#34;)
+                    elif isinstance(part, InlineDataPart):
+                        md_add(f&#34;    &lt;media_attachment type=&#39;bytes_data&#39; mime_type=&#39;{part.mime_type}&#39; data_preview=&#39;{part.base64_data[:50]}...&#39;/&gt;&#34;)
+                    elif isinstance(part, ExecutableCodePart):
+                        md_add(f&#34;    &lt;executable_code language=&#39;{part.language}&#39;&gt;&#34;)
+                        md_add(f&#34;      &lt;![CDATA[{part.code_content}]]&gt;&#34;)
+                        md_add(f&#34;    &lt;/executable_code&gt;&#34;)
+                    elif isinstance(part, CodeExecutionResultPart):
+                        md_add(f&#34;    &lt;code_execution_result outcome=&#39;{part.outcome}&#39;&gt;&#34;)
+                        md_add(f&#34;      &lt;output&gt;&lt;![CDATA[{part.output_content}]]&gt;&lt;/output&gt;&#34;)
+                        md_add(f&#34;    &lt;/code_execution_result&gt;&#34;)
+                    elif isinstance(part, FunctionCallPart):
+                        md_add(f&#34;    &lt;function_call name=&#39;{part.name}&#39;&gt;&#34;)
+                        md_add(f&#34;      &lt;arguments&gt;&#34;)
+                        md_add(&#34;        ```json&#34;)
+                        md_add(json.dumps(part.args, indent=2, ensure_ascii=False))
+                        md_add(&#34;        ```&#34;)
+                        md_add(f&#34;      &lt;/arguments&gt;&#34;)
+                        md_add(f&#34;    &lt;/function_call&gt;&#34;)
+                    elif isinstance(part, FunctionResponsePart):
+                        md_add(f&#34;    &lt;function_response name=&#39;{part.name}&#39;&gt;&#34;)
+                        md_add(f&#34;      &lt;response_data&gt;&#34;)
+                        md_add(&#34;        ```json&#34;)
+                        md_add(json.dumps(part.response_content, indent=2, ensure_ascii=False))
+                        md_add(&#34;        ```&#34;)
+                        md_add(f&#34;      &lt;/response_data&gt;&#34;)
+                        md_add(f&#34;    &lt;/function_response&gt;&#34;)
+                    else:
+                        md_add(f&#34;    &lt;unknown_part type=&#39;{type(part).__name__}&#39;&gt;&lt;![CDATA[{str(part)}]]&gt;&lt;/unknown_part&gt;&#34;)
+            md_add(f&#34;  &lt;/turn&gt;&#34;)
+    md_add(&#34;&lt;/dialogue_history&gt;&#34;)
+    return &#34;\n&#34;.join(markdown_parts)</code></pre>
+</details>
+<div class="desc"><p>Generates a Markdown string with custom XML-like tags from IntermediateChatData.
+Adapted from format_markdown_for_rag in parser_v2.py.</p></div>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="google_chat_utils_v3.parsing" href="index.html">google_chat_utils_v3.parsing</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="google_chat_utils_v3.parsing.google_studio_parser.load_json_file" href="#google_chat_utils_v3.parsing.google_studio_parser.load_json_file">load_json_file</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="google_chat_utils_v3.parsing.google_studio_parser.GoogleAIStudioJSONParser" href="#google_chat_utils_v3.parsing.google_studio_parser.GoogleAIStudioJSONParser">GoogleAIStudioJSONParser</a></code></h4>
+<ul class="">
+<li><code><a title="google_chat_utils_v3.parsing.google_studio_parser.GoogleAIStudioJSONParser.parse" href="#google_chat_utils_v3.parsing.google_studio_parser.GoogleAIStudioJSONParser.parse">parse</a></code></li>
+<li><code><a title="google_chat_utils_v3.parsing.google_studio_parser.GoogleAIStudioJSONParser.to_markdown" href="#google_chat_utils_v3.parsing.google_studio_parser.GoogleAIStudioJSONParser.to_markdown">to_markdown</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
+</footer>
+</body>
+</html>
