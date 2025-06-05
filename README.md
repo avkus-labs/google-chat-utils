@@ -1,110 +1,153 @@
-# 🦾 Google AI Studio Chat Parser v2
+# 🚀 google-chat-utils v3: Объектно-ориентированный подход 🚀
 
-**Мощный инструмент для парсинга чатов Google AI Studio, стандартизации истории, генерации Markdown для RAG и реконструкции Python-кода для Gemini API.**
+**Мощный и гибкий набор инструментов v3 для парсинга чатов Google AI Studio, их объектного представления, генерации Markdown для RAG и реконструкции Python-кода для Gemini API с использованием новой объектно-ориентированной архитектуры.**
+
+Включает также утилиту для объединения Markdown-файлов.
 
 ---
 
-## 🚀 Возможности
-- Парсинг экспортов чатов Google AI Studio (JSON, txt, без расширения)
-- Извлечение настроек запуска, системной инструкции, истории диалога, инструментов (function calling, code execution)
-- Генерация промежуточного стандартизированного JSON
-- Генерация Markdown с мета-тегами для RAG
-- Реконструкция Python-скрипта для Gemini API по шаблонам (vanilla, dynamic SI, Google-style)
-- Поддержка мультимодальных сообщений, function calling, code execution, кастомных инструментов
-- Красивый, информативный и дружелюбный вывод в консоль с эмодзи
+## ✨ Ключевые особенности v3
+*   **Полностью объектно-ориентированный дизайн:** Логика разделена на классы для улучшенной модульности, читаемости и расширяемости.
+*   **Детальные модели данных (`core`):** Структурированное представление всех элементов чата.
+*   **Продвинутый парсинг JSON-экспорта:** Загрузка и анализ JSON-файлов из Google AI Studio с помощью класса `GoogleAIStudioJSONParser`.
+*   **Генерация Markdown для RAG:** Создание Markdown-представления чата с кастомными тегами через метод `to_markdown` парсера.
+*   **Гибкая реконструкция Python-кода:** Генерация исполняемых Python-скриптов для Gemini API с помощью класса `GeminiAPICodeReconstructor` и текстовых шаблонов.
+*   **Трансформация JSON Schema:** Утилиты в классе `SchemaTransformer` для преобразования JSON Schema между форматами OpenAI и Gemini.
+*   **Утилита для объединения Markdown (`tools/markdown_merger.py`):** Позволяет склеивать несколько Markdown-файлов в один.
+*   **Типизация и документация:** Код снабжен type hints и подробными docstrings.
 
 ---
 
 ## 📦 Установка
-1. Клонируйте репозиторий:
-   ```bash
-   git clone https://github.com/your-org/google_ai_studio_chat_parser_v2.git
-   cd google_ai_studio_chat_parser_v2
-   ```
-2. Установите зависимости:
-   ```bash
-   pip install -r requirements.txt
-   ```
+
+1.  Клонируйте репозиторий (если вы этого еще не сделали):
+    ```bash
+    git clone https://github.com/avkus/google_ai_studio_chat_parser_v3.git # Замените URL, если он другой
+    cd google_ai_studio_chat_parser_v3
+    ```
+2.  (Опционально) Создайте и активируйте виртуальное окружение:
+    ```bash
+    python -m venv venv
+    source venv/bin/activate # для Linux/macOS
+    # venv\Scripts\activate # для Windows
+    ```
+3.  Установите зависимости (если они будут вынесены в `requirements.txt`):
+    ```bash
+    # pip install -r requirements.txt
+    ```
+    Основная зависимость для работы с Gemini API:
+    ```bash
+    pip install google-generativeai
+    ```
+
+*Примечание: Убедитесь, что у вас установлен Python 3.9+.*
 
 ---
 
-## 📝 Быстрый старт
+## 📝 Быстрый старт (Использование)
 
-### 1. Парсинг чата Google AI Studio
+### 1. Использование через командную строку (`cli_v3.py`)
 
-```bash
-python src/parser_v2.py --input_file input_data/Example1 --output_dir output_data
-```
+Интерфейс командной строки `cli_v3.py` предоставляет удобный доступ к основным функциям.
 
-**Пример вывода:**
-```
-🚀 Запуск parser_v2.py 🚀
-----------------------------------------------------
-📄 Входной файл: input_data/Example1
-📁 Папка вывода: output_data
-----------------------------------------------------
-⚙️  Извлечение настроек сессии (runSettings)... ✔️
-📝 Извлечение системной инструкции... ✔️
-🗣️  Обработка истории диалога... ✔️ (обработано X ходов)
-💾 Форматирование и сохранение "промежуточного JSON" в: output_data/Example1.json... ✔️
-💾 Форматирование и сохранение Markdown для RAG в: output_data/Example1.md... ✔️
-----------------------------------------------------
-✨ Парсинг файла input_data/Example1 успешно завершен! ✨
-   Промежуточный JSON: output_data/Example1.json
-   Markdown для RAG: output_data/Example1.md
-```
+*   **Парсинг чата Google AI Studio (`parse`)**
+    *   Парсинг одного файла:
+        ```bash
+        python google_chat_utils_v3/cli_v3.py parse --input_file path/to/your/chat_export.json --output_dir path/to/output_base_dir
+        ```
+        Результат будет сохранен в `path/to/output_base_dir/chat_export/intermediate.json` и `path/to/output_base_dir/chat_export/rag.md`.
 
-### 2. Реконструкция Python-кода для Gemini API
+    *   Парсинг всех JSON-файлов в директории:
+        ```bash
+        python google_chat_utils_v3/cli_v3.py parse --input_dir path/to/input_json_files/ --output_dir path/to/output_base_dir
+        ```
+        Для каждого файла в `input_json_files` будет создана своя подпапка в `output_base_dir`.
 
-```bash
-python src/reconstructor_v2.py --input_json output_data/Example1.json --output_py output_data/reconstructed_Example1_vanilla.py --template_path templates/gemini_studio_vanilla.py.tpl
-```
+*   **Реконструкция Python-кода для Gemini API (`reconstruct`)**
+    ```bash
+    python google_chat_utils_v3/cli_v3.py reconstruct \
+        --input_json path/to/output_base_dir/chat_export/intermediate.json \
+        --output_py reconstructed_script.py \
+        --template_dir google_chat_utils_v3/templates/ \
+        --template_name gemini_studio_default.py.tpl \
+        --api_key_var_name "MY_API_KEY"
+    ```
+    Сгенерированный `reconstructed_script.py` будет сохранен в `path/to/output_base_dir/chat_export/`.
 
-**Пример вывода:**
-```
-🚀 Запуск reconstructor_v2.py 🚀
-ℹ️  Входной JSON: output_data/Example1.json
-ℹ️  Шаблон: templates/gemini_studio_vanilla.py.tpl
-----------------------------------------------------
-⚙️  Загрузка промежуточного JSON... ✔️
-⚙️  Воссоздание списка contents... ✔️
-⚙️  Воссоздание конфигурации инструментов (tools)... ✔️
-⚙️  Воссоздание схемы ответа (response_schema)... ✔️
-🐍 Генерация Python-кода по шаблону... ✔️
-💾 Сохранение Python-файла в: output_data/reconstructed_Example1_vanilla.py... ✔️
-----------------------------------------------------
-✨ Реконструкция Python-кода успешно завершена! ✨
-   Выходной файл: output_data/reconstructed_Example1_vanilla.py
+    *Примечание: Для полноценной работы связки `parse` -> `reconstruct` через промежуточный JSON требуется доработка сериализации/десериализации `IntermediateChatData`.*
+
+### 2. Утилита объединения Markdown (`tools/markdown_merger.py`)
+    ```bash
+    python tools/markdown_merger.py \
+        --input docs/parser.md docs/reconstructor.md \
+        --output docs/combined_api.md \
+        --separator "\n---\n" \
+        --include_filenames --filename_header_level 2
+    ```
+    Эта команда объединит `parser.md` и `reconstructor.md` в `combined_api.md`, вставляя имена файлов как заголовки H2 и стандартный разделитель.
+
+    ```bash
+    python tools/markdown_merger.py \
+        --input path/to/markdown_folder/ \
+        --output all_in_folder_merged.md \
+        --recursive
+    ```
+    Эта команда рекурсивно найдет и объединит все `.md` файлы из `path/to/markdown_folder/`.
+
+
+### 3. Программное использование (Python API)
+
+Классы библиотеки можно импортировать и использовать в ваших собственных Python-скриптах. Подробные примеры смотрите в соответствующей документации в папке `docs/`.
+
+```python
+# Пример импорта основных классов
+from google_chat_utils_v3.parsing.google_studio_parser import GoogleAIStudioJSONParser
+from google_chat_utils_v3.reconstruction.gemini_code_reconstructor import GeminiAPICodeReconstructor
+from google_chat_utils_v3.transformation.schema_transformer import SchemaTransformer
+from google_chat_utils_v3.core.chat_elements import IntermediateChatData
+from typing import Optional # Для type hinting
+
+# Использование:
+# parser = GoogleAIStudioJSONParser()
+# intermediate_data: Optional[IntermediateChatData] = parser.parse("path/to/chat.json")
+# if intermediate_data:
+#     md = parser.to_markdown(intermediate_data)
+#     reconstructor = GeminiAPICodeReconstructor(template_dir="google_chat_utils_v3/templates")
+#     py_code = reconstructor.reconstruct(intermediate_data, "gemini_studio_default.py.tpl")
 ```
 
 ---
 
-## 🧩 Шаблоны для реконструкции
-- `gemini_studio_vanilla.py.tpl` — максимально чистый, похожий на экспорт Google AI Studio
-- `gemini_studio_dynamic_si.py.tpl` — поддержка динамической подгрузки системной инструкции из `.si`-файла
-- `gemini_studio_google_vanilla.py.tpl` — стиль экспорта Google AI Studio (импорты, структура)
+## 🏛️ Архитектура v3
 
-Выбор шаблона осуществляется через аргумент `--template_path`.
+Библиотека `google-chat-utils v3` построена на следующих основных компонентах:
 
----
-
-## 🛠️ Архитектура
-- **src/parser_v2.py** — основной парсер, CLI, генерация JSON и Markdown
-- **src/reconstructor_v2.py** — реконструктор Python-кода по шаблону
-- **src/schema_transformer.py** — преобразование схем между форматами OpenAI ↔ Gemini
-- **templates/** — шаблоны Python-кода для разных сценариев
-- **output_data/** — все результаты работы
+*   **`google_chat_utils_v3.core`**: Базовые модели данных (`SchemaData`, `FunctionDefinition`, `IntermediateChatData`, `ChatMessagePart` и др.).
+*   **`google_chat_utils_v3.parsing`**: `GoogleAIStudioJSONParser` для парсинга и генерации Markdown.
+*   **`google_chat_utils_v3.reconstruction`**: `GeminiAPICodeReconstructor` для генерации Python-кода.
+*   **`google_chat_utils_v3.transformation`**: `SchemaTransformer` для преобразования JSON Schema.
+*   **`google_chat_utils_v3.templates`**: Шаблоны `.py.tpl` для реконструктора.
+*   **`google_chat_utils_v3.docs`**: Подробная документация по API.
+*   **`google_chat_utils_v3.cli_v3.py`**: Интерфейс командной строки.
+*   **`tools/markdown_merger.py`**: Утилита для объединения Markdown-файлов.
 
 ---
 
-## 🤝 Авторы и вклад
-- Проект создан с заботой о разработчиках и RAG-инженерах
-- Вдохновлён лучшими практиками Google AI Studio, OpenAI, Gemini API
-- Добро пожаловать к обсуждению и развитию!
+## 📚 Детальная документация
+
+Более подробная информация о каждом модуле, классе и их API доступна в разделе [Документация](./docs/index.md).
 
 ---
 
-## 🏁 Итог
-**Проект завершён! Все этапы автоматизации, стандартизации и реконструкции реализованы.**
+## 🤝 Вклад и дальнейшее развитие
 
-✨ Спасибо за использование! Если есть идеи или баги — создавайте issue или pull request! ✨
+Мы приветствуем ваши отзывы, идеи по улучшению и сообщения об ошибках! Пожалуйста, используйте раздел "Issues" в репозитории проекта.
+
+Планируемые улучшения:
+*   Реализация полноценной сериализации/десериализации `IntermediateChatData` для `cli_v3.py`.
+*   Добавление комплексных юнит-тестов.
+*   Расширение поддержки различных типов URI и сложных мультимодальных сценариев в парсере и реконструкторе.
+
+---
+
+✨ Надеемся, обновленная библиотека `google-chat-utils v3` станет еще более удобным и мощным инструментом для вашей работы! ✨
