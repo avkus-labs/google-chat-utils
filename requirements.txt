@@ -1,1 +1,15 @@
- 
+ google-generativeai
+# Для качества кода
+flake8
+black
+isort
+# Для тестов
+pytest
+pytest-cov
+# Для документации (выбери или используй оба, если нужно)
+pdoc3 
+# или/и
+# mkdocs
+# mkdocs-material
+# mkdocstrings
+# mkdocstrings-python
