@@ -53,15 +53,18 @@
 *   **Парсинг чата Google AI Studio (`parse`)**
     *   Парсинг одного файла:
         ```bash
-        python google_chat_utils_v3/cli_v3.py parse --input_file path/to/your/chat_export.json --output_dir path/to/output_base_dir
+        python utils/cli_v3.py parse --input_file data/SecOps-Flash --output_prefix output_data/
         ```
-        Результат будет сохранен в `path/to/output_base_dir/chat_export/intermediate.json` и `path/to/output_base_dir/chat_export/rag.md`.
+        Результат будет сохранен в `output_data/SecOps-Flash_intermediate.json` и `output_data/SecOps-Flash_raw_rag.md`.
 
     *   Парсинг всех JSON-файлов в директории:
         ```bash
-        python google_chat_utils_v3/cli_v3.py parse --input_dir path/to/input_json_files/ --output_dir path/to/output_base_dir
+        python utils/cli_v3.py parse --input_dir data/ --output_prefix output_data/
         ```
-        Для каждого файла в `input_json_files` будет создана своя подпапка в `output_base_dir`.
+        Для каждого файла в `data/` будет создана своя подпапка в `output_data/`.
+    
+    - `--output_prefix` (или `-o`) — префикс для имён выходных файлов и директорий. По умолчанию: `output_data/`.
+    - Для Windows и Linux/Unix можно использовать прямой слэш (`/`) в путях — Python корректно обработает их на любой ОС.
 
 *   **Реконструкция Python-кода для Gemini API (`reconstruct`)**
     ```bash

@@ -1,19 +1,12 @@
-print('START CLI')
-try:
-    import argparse
-    import os
-    import sys
-    import json
-    from utils.parsing.google_studio_parser import GoogleAIStudioJSONParser, load_json_file
-    from utils.reconstruction.gemini_code_reconstructor import GeminiAPICodeReconstructor
-    from utils.core.chat_elements import IntermediateChatData, TextPart, ThoughtsPart, ExecutableCodePart, CodeExecutionResultPart, FunctionCallPart, FunctionResponsePart, InlineDataPart, UriReferencePart
-except Exception as e:
-    print(f'IMPORT ERROR: {e}')
-    import traceback; traceback.print_exc()
-    sys.exit(1)
+import argparse
+import os
+import sys
+import json
 
 # === Определение корня проекта ===
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+if PROJECT_ROOT not in sys.path:
+    sys.path.append(PROJECT_ROOT)
 
 # Цветовые коды ANSI
 RESET = "\033[0m"
@@ -26,6 +19,18 @@ CYAN = "\033[96m"
 MAGENTA = "\033[95m"
 
 SEPARATOR = f"{CYAN}{'-'*56}{RESET}"
+
+print('START CLI')
+try:
+    from utils.parsing.google_studio_parser import GoogleAIStudioJSONParser, load_json_file
+    from utils.reconstruction.gemini_code_reconstructor import GeminiAPICodeReconstructor
+    from utils.core.chat_elements import IntermediateChatData, TextPart, ThoughtsPart, ExecutableCodePart, CodeExecutionResultPart, FunctionCallPart, FunctionResponsePart, InlineDataPart, UriReferencePart
+except Exception as e:
+    print(f'{BOLD}{RED}IMPORT ERROR: {e}{RESET}')
+    import traceback
+    tb_str = traceback.format_exc()
+    print(f'{BOLD}{RED}{tb_str}{RESET}')
+    sys.exit(1)
 
 def ensure_dir(path):
     """Ensure directory exists."""
@@ -55,8 +60,8 @@ def process_single_parse_file(input_file_path: str, parser_instance: GoogleAIStu
 
     print(f"{BOLD}{BLUE}🚀 Запуск команды [parse] 🚀{RESET}")
     print(SEPARATOR)
-    print(f"{BOLD}📄 Входной файл:{RESET} {input_file_path}")
-    print(f"{BOLD}📁 Output prefix:{RESET} {output_prefix}")
+    print(f"{BOLD}📄 Входной файл:{RESET} {os.path.normpath(input_file_path)}")
+    print(f"{BOLD}📁 Output prefix:{RESET} {os.path.normpath(output_prefix)}")
     print(SEPARATOR)
 
     intermediate_data = parser_instance.parse(input_file_path)
@@ -72,7 +77,7 @@ def process_single_parse_file(input_file_path: str, parser_instance: GoogleAIStu
         try:
             with open(json_out_path, 'w', encoding='utf-8') as f_json:
                 json.dump(intermediate_data.to_dict(), f_json, indent=2, ensure_ascii=False)
-            print(f"  {GREEN}💾 Промежуточный JSON сохранён: {json_out_path} ✔️{RESET}")
+            print(f"  {GREEN}💾 Промежуточный JSON сохранён: {os.path.normpath(json_out_path)} ✔️{RESET}")
         except Exception as e:
             print(f"  {RED}❌ Ошибка при сохранении промежуточного JSON: {json_out_path}: {e}{RESET}", file=sys.stderr)
             return False
@@ -81,7 +86,7 @@ def process_single_parse_file(input_file_path: str, parser_instance: GoogleAIStu
         try:
             with open(md_out_path, 'w', encoding='utf-8') as f_md:
                 f_md.write(markdown_content)
-            print(f"  {GREEN}💾 Markdown для RAG сохранён: {md_out_path} ✔️{RESET}")
+            print(f"  {GREEN}💾 Markdown для RAG сохранён: {os.path.normpath(md_out_path)} ✔️{RESET}")
         except Exception as e:
             print(f"  {RED}❌ Ошибка при сохранении Markdown: {md_out_path}: {e}{RESET}", file=sys.stderr)
             return False
@@ -123,9 +128,9 @@ def handle_parse(args):
 def handle_reconstruct(args):
     print(f"{BOLD}{MAGENTA}🚀 Запуск команды [reconstruct] 🚀{RESET}")
     print(SEPARATOR)
-    print(f"{BOLD}📄 Входной JSON:{RESET} {args.input_json}")
-    print(f"{BOLD}📁 Output Python:{RESET} {args.output_py}")
-    print(f"{BOLD}🧩 Шаблон:{RESET} {args.template_name}")
+    print(f"{BOLD}📄 Входной JSON:{RESET} {os.path.normpath(args.input_json)}")
+    print(f"{BOLD}📁 Output Python:{RESET} {os.path.normpath(args.output_py)}")
+    print(f"{BOLD}🧩 Шаблон:{RESET} {os.path.normpath(args.template_name)}")
     print(SEPARATOR)
     input_json_full_path = os.path.join(PROJECT_ROOT, args.input_json)
     if not os.path.isfile(input_json_full_path):
@@ -166,7 +171,7 @@ def handle_reconstruct(args):
         )
         with open(full_output_py_path, 'w', encoding='utf-8') as f:
             f.write(python_script)
-        print(f"{GREEN}💾 Python-скрипт сохранён: {full_output_py_path} ✔️{RESET}")
+        print(f"{GREEN}💾 Python-скрипт сохранён: {os.path.normpath(full_output_py_path)} ✔️{RESET}")
         print(f"{SEPARATOR}")
         print(f"{GREEN}✨ Команда [reconstruct] успешно завершена! ✨{RESET}")
     except FileNotFoundError as e:
