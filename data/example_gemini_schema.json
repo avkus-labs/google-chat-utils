@@ -1,0 +1,53 @@
+{
+  "type": "OBJECT",
+  "description": "Order info",
+  "nullable": false,
+  "properties": {
+    "orderId": {
+      "type": "STRING",
+      "description": "Order identifier",
+      "nullable": false
+    },
+    "amount": {
+      "type": "NUMBER",
+      "description": "Order amount",
+      "nullable": false
+    },
+    "status": {
+      "type": "STRING",
+      "nullable": true,
+      "enum": [
+        "pending",
+        "paid",
+        "cancelled"
+      ]
+    },
+    "items": {
+      "type": "ARRAY",
+      "nullable": false,
+      "items": {
+        "type": "OBJECT",
+        "nullable": false,
+        "properties": {
+          "sku": {
+            "type": "STRING",
+            "nullable": false
+          },
+          "qty": {
+            "type": "INTEGER",
+            "nullable": false
+          }
+        },
+        "required": [
+          "sku",
+          "qty"
+        ]
+      }
+    }
+  },
+  "required": [
+    "orderId",
+    "amount",
+    "items"
+  ]
+}

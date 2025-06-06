@@ -1,0 +1,87 @@
+{
+  "runSettings": {
+    "temperature": 1.0,
+    "model": "models/gemini-2.5-pro-preview-05-06",
+    "topP": 0.95,
+    "topK": 64,
+    "maxOutputTokens": 65536,
+    "safetySettings": [{
+      "category": "HARM_CATEGORY_HARASSMENT",
+      "threshold": "OFF"
+    }, {
+      "category": "HARM_CATEGORY_HATE_SPEECH",
+      "threshold": "OFF"
+    }, {
+      "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+      "threshold": "OFF"
+    }, {
+      "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+      "threshold": "OFF"
+    }],
+    "responseMimeType": "text/plain",
+    "enableCodeExecution": false,
+    "enableSearchAsATool": false,
+    "enableBrowseAsATool": false,
+    "enableAutoFunctionResponse": false
+  },
+  "systemInstruction": {
+    "text": "Системная инструкция"
+  },
+  "chunkedPrompt": {
+    "chunks": [{
+      "text": "Привет",
+      "role": "user",
+      "tokenCount": 2
+    }, {
+      "text": "**Acknowledging the Greeting**\n\nI\u0027ve registered the Russian greeting, \"Привет.\" My next step is to formulate a suitable response, also in Russian. I\u0027m aiming for a simple, yet polite, acknowledgment.\n\n\n",
+      "role": "model",
+      "tokenCount": 31,
+      "isThought": true,
+      "thoughtSignatures": [""]
+    }, {
+      "text": "Привет! Чем могу помочь?",
+      "role": "model",
+      "finishReason": "STOP",
+      "tokenCount": 7
+    }],
+    "pendingInputs": [{
+      "driveImage": {
+        "id": "1rjd1mqAvk8oQ4hdtNNSnNKxIsm9s6B7N"
+      },
+      "role": "user",
+      "tokenCount": 259
+    }, {
+      "driveDocument": {
+        "id": "1hsirgPSjDR2PxkdkRvyx2W2j_BATF2zccsvrRfFQdpU"
+      },
+      "role": "user",
+      "tokenCount": 61
+    }, {
+      "sampleImageId": "space1",
+      "role": "user",
+      "tokenCount": 259
+    }, {
+      "role": "user",
+      "youtubeVideo": {
+        "id": "jUQcR2Ai9O0"
+      },
+      "tokenCount": 6186
+    }, {
+      "driveVideo": {
+        "id": "1ToAevccJKUnGiVbQHidvRSVdiTe0ZsLL"
+      },
+      "role": "user",
+      "tokenCount": 790
+    }, {
+      "driveImage": {
+        "id": "1UqYtlgqEYXiWTJLI_OKz0hlQk6mptOiJ"
+      },
+      "role": "user",
+      "tokenCount": 259
+    }, {
+      "text": "Скриншот, 123 - MyDrive, Sample Media, YouTube, Camera, Camera Photo",
+      "role": "user",
+      "tokenCount": 23
+    }]
+  }
+}

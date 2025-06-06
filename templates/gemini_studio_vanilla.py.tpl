@@ -1,13 +1,17 @@
 # -*- coding: utf-8 -*-
-"""This script was generated from a Google AI Studio chat export.
+"""Этот скрипт сгенерирован из Google AI Studio.
 
 Timestamp: {timestamp}
 Source File: {source_file_name}
 """
 
-import google.generativeai as genai
-from google.generativeai.types import content_types, GenerateContentResponse
+# To run this code you need to install the following dependencies:
+# pip install google-genai
+
 import base64
+import os
+from google import genai
+from google.genai import types
 
 # --- API Key Configuration ---
 # IMPORTANT: Set your API_KEY here or via the GOOGLE_API_KEY environment variable.
@@ -58,7 +62,7 @@ if _si_val and _si_val != "None":
         _si_val = _si_val[1:-1]
     _si_val = _si_val.strip()
     if _si_val:
-        system_instruction_for_api = [content_types.Part.from_text(text=_si_val)]
+        system_instruction_for_api = [types.Content.from_text(text=_si_val)]
 
 # --- Combined Generation Setup for send_message ---
 generate_content_settings = {{
@@ -77,78 +81,45 @@ final_send_message_settings = {{k: v for k, v in generate_content_settings.items
 # History reconstructed from the AI Studio session.
 history = {history_code_str}
 
-def run_chat(model_name: str, chat_history: list, send_message_settings: dict):
-    """Initializes and runs the chat session."""
-    print(f"Initializing model: {{model_name}}")
-    model = genai.GenerativeModel(
-        model_name
-        # System instruction is passed via send_message_settings if defined there
-        # Tools are also passed via send_message_settings
-    )
-    chat = model.start_chat(history=chat_history)
-    print("Chat session started. Type 'exit' or 'quit' to end.")
+def generate():
+    client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
+    model = {model_name_repr}
+    contents = {contents_code_str}
+    tools = {tools_code_str}
+    system_instruction = {system_instruction_repr}
+    generation_config = {generation_config_code_str}
+    response_mime_type = {response_mime_type_repr}
+    response_schema = {response_schema_code_str}
 
-    while True:
-        try:
-            user_input = input("You: ")
-            if user_input.lower() in ['exit', 'quit']:
-                print("Exiting chat.")
-                break
-            if not user_input:
-                continue
+    config_params = {{}}
+    if generation_config is not None and generation_config != "None":
+        config_params['generation_config'] = generation_config
+    if tools is not None and tools != "None":
+        config_params['tools'] = tools
+    if system_instruction is not None and system_instruction != "None":
+        config_params['system_instruction'] = system_instruction
+    if response_mime_type is not None and response_mime_type != "None":
+        config_params['response_mime_type'] = response_mime_type
+    if response_schema is not None and response_schema != "None" and response_mime_type == 'application/json':
+        config_params['response_schema'] = response_schema
 
-            print("Gemini: Thinking...")
-            # Use final_send_message_settings which has None values filtered out
-            response = chat.send_message(user_input, **send_message_settings)
-            
-            # Process and print response parts
-            all_text_parts = []
-            function_calls_found = []
-            executable_codes_found = []
+    generate_content_config = types.GenerateContentConfig(**config_params)
 
-            for part in response.parts: # response.parts is available on GenerateContentResponse
-                if part.text:
-                    all_text_parts.append(part.text)
-                
-                if hasattr(part, 'function_call') and part.function_call:
-                    fc = part.function_call
-                    function_calls_found.append(fc) # Store for later summary if needed
-                    print(f"\n>> Function Call Request: {{fc.name}}")
-                    print(f"   Arguments: {{fc.args}}")
-                    print(f"   (To respond, call your function and then use: chat.send_message(content_types.Part.from_function_response(name='{fc.name}', response={{...}}))) ")
-                
-                if hasattr(part, 'executable_code') and part.executable_code:
-                    ec = part.executable_code
-                    executable_codes_found.append(ec)
-                    print(f"\n>> Executable Code Provided by Model:")
-                    print("```python")
-                    print(ec.code)
-                    print("```")
-                    print(f"   (To respond with execution result, use: chat.send_message(content_types.Part.from_code_execution_result(output='...')))")
+    for chunk in client.models.generate_content_stream(
+        model=model,
+        contents=contents,
+        config=generate_content_config,
+    ):
+        # Логика вывода максимально похожа на Studio
+        if hasattr(chunk, 'text') and chunk.text:
+            print(chunk.text, end="")
+        if hasattr(chunk, 'function_calls') and chunk.function_calls:
+            for fc in chunk.function_calls:
+                print(f"\nFunction call: {{fc.name}}({fc.args})")
+        if hasattr(chunk, 'executable_code') and chunk.executable_code:
+            print(f"\n[Executable code]: {chunk.executable_code}")
+        if hasattr(chunk, 'code_execution_result') and chunk.code_execution_result:
+            print(f"\n[Code execution result]: {chunk.code_execution_result}")
 
-            if all_text_parts:
-                print("Gemini:", "".join(all_text_parts))
-            
-            # If no text was printed, but tools were called, this indicates a tool-only turn clearly.
-            # If nothing at all was found (no text, no fc, no ec), then print a generic no content message.
-            if not all_text_parts and not function_calls_found and not executable_codes_found:
-                print("Gemini: (No text, function call, or executable code in response)")
-
-        except Exception as e:
-            print(f"Error during chat: {{e}}")
-            # break # Optionally break on error
-
-if __name__ == '__main__':
-    # Configure API key if not set via environment variable
-    # import os
-    # if not os.getenv('GOOGLE_API_KEY'):
-    #     genai.configure(api_key="YOUR_API_KEY_HERE") # Prompt user or hardcode carefully
-    #     if not os.getenv('GOOGLE_API_KEY') and not genai.API_KEY:
-    #          print("Please set your GOOGLE_API_KEY environment variable or configure it in the script.")
-    #          exit()
-
-    run_chat(
-        model_name=MODEL_NAME, 
-        chat_history=history, 
-        send_message_settings=final_send_message_settings
-    ) 
+if __name__ == "__main__":
+    generate() 

@@ -1,0 +1,163 @@
+{
+  "runSettings": {
+    "temperature": 1.0,
+    "model": "models/gemini-2.5-pro-preview-05-06",
+    "topP": 0.95,
+    "topK": 64,
+    "maxOutputTokens": 65536,
+    "safetySettings": [{
+      "category": "HARM_CATEGORY_HARASSMENT",
+      "threshold": "OFF"
+    }, {
+      "category": "HARM_CATEGORY_HATE_SPEECH",
+      "threshold": "OFF"
+    }, {
+      "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+      "threshold": "OFF"
+    }, {
+      "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+      "threshold": "OFF"
+    }],
+    "responseMimeType": "text/plain",
+    "enableCodeExecution": false,
+    "functionDeclarations": [{
+      "name": "someFunction",
+      "description": "Description",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "String": {
+            "type": "STRING"
+          },
+          "Number": {
+            "type": "NUMBER"
+          },
+          "Integer": {
+            "type": "INTEGER"
+          },
+          "Boolean": {
+            "type": "BOOLEAN"
+          },
+          "Object": {
+            "type": "OBJECT",
+            "properties": {
+              "String": {
+                "type": "STRING"
+              },
+              "Number": {
+                "type": "NUMBER"
+              },
+              "Integer": {
+                "type": "INTEGER"
+              },
+              "Bollean": {
+                "type": "BOOLEAN"
+              },
+              "ОJbject": {
+                "type": "OBJECT",
+                "properties": {
+                  "String": {
+                    "type": "STRING"
+                  },
+                  "Number": {
+                    "type": "NUMBER"
+                  },
+                  "Integer": {
+                    "type": "INTEGER"
+                  },
+                  "Boolean": {
+                    "type": "BOOLEAN"
+                  },
+                  "Object": {
+                    "type": "OBJECT",
+                    "properties": {
+                      "String": {
+                        "type": "STRING"
+                      },
+                      "Number": {
+                        "type": "NUMBER"
+                      },
+                      "Integer": {
+                        "type": "INTEGER"
+                      },
+                      "Boolean": {
+                        "type": "BOOLEAN"
+                      },
+                      "Object (максимальная вложенность)": {
+                        "type": "OBJECT"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "Enum": {
+            "type": "STRING",
+            "enum": ["value_1", "value_N"]
+          }
+        }
+      }
+    }, {
+      "name": "moreFunction",
+      "description": "Еще функция",
+      "parameters": {
+        "type": "OBJECT",
+        "properties": {
+          "String": {
+            "type": "STRING"
+          }
+        }
+      }
+    }],
+    "enableSearchAsATool": false,
+    "enableBrowseAsATool": false,
+    "enableAutoFunctionResponse": false
+  },
+  "systemInstruction": {
+    "text": "Системная инструкция"
+  },
+  "chunkedPrompt": {
+    "chunks": [{
+      "text": "Привет, вызови функцию someFunction c параметрами String\u003d\"Hi\", Integer\u003d26, Boolean\u003dfalse",
+      "role": "user",
+      "tokenCount": 24
+    }, {
+      "text": "**Mapping Parameters Now**\n\nI\u0027ve begun mapping the parameters to the function arguments. I\u0027m focusing on the types: String, Integer, and Boolean. I\u0027m working to ensure a correct and seamless argument transfer.\n\n\n",
+      "role": "model",
+      "tokenCount": 53,
+      "isThought": true,
+      "thoughtSignatures": [""]
+    }, {
+      "role": "model",
+      "finishReason": "STOP",
+      "tokenCount": 125,
+      "resolvedFunctionCall": {
+        "functionCall": {
+          "name": "someFunction",
+          "args": {
+            "Boolean": false,
+            "Integer": 26.0,
+            "String": "Hi"
+          }
+        },
+        "response": "{\n  \"String_output\": \"Это строка, сгенерированная someFunction\",\n  \"Number_output\": 10.5,\n  \"Integer_output\": 100,\n  \"Boolean_output\": false,\n  \"Object_output\": {\n    \"String\": \"Вложенная строка ответа\",\n    \"Number\": 20.2,\n    \"Integer\": 200,\n    \"Bollean\": true \n  },\n  \"Enum_output\": \"value_1\"\n}"
+      }
+    }, {
+      "text": "**Defining Function Parameters**\n\nI\u0027ve determined the parameters needed for the `someFunction` call. I\u0027ll pass \"Hi\" as a string, 26 as an integer, and False as a boolean. I\u0027m now structuring the call accordingly.\n\n\n",
+      "role": "model",
+      "tokenCount": 50,
+      "isThought": true,
+      "thoughtSignatures": [""]
+    }, {
+      "text": "Я вызвал функцию `someFunction` со следующими параметрами: строка \"Hi\", число 26 и логическое значение \"ложь\". Вот ответ от функции:\n```json\n{\"someFunction_response\": {\"Boolean_output\": False, \"Enum_output\": \"value_1\", \"Integer_output\": 100, \"Number_output\": 10.5, \"Object_output\": {\"Bollean\": True, \"Integer\": 200, \"Number\": 20.2, \"String\": \"Вложенная строка ответа\"}, \"String_output\": \"Это строка, сгенерированная someFunction\"}}\n```",
+      "role": "model",
+      "finishReason": "STOP",
+      "tokenCount": 141
+    }],
+    "pendingInputs": [{
+      "text": "",
+      "role": "user"
+    }]
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "type": "object",
+  "description": "Order info",
+  "properties": {
+    "orderId": {"type": "string", "description": "Order identifier"},
+    "amount": {"type": "number", "description": "Order amount"},
+    "status": {"type": ["string", "null"], "enum": ["pending", "paid", "cancelled"]},
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "sku": {"type": "string"},
+          "qty": {"type": "integer"}
+        },
+        "required": ["sku", "qty"]
+      }
+    }
+  },
+  "required": ["orderId", "amount", "items"]
+} 

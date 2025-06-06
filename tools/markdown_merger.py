@@ -6,6 +6,7 @@ from typing import List, Optional, Set
 def find_markdown_files(paths: List[str], recursive: bool) -> List[str]:
     """
     Finds all Markdown files (.md) from a list of paths (files or directories).
+    Если paths содержит только одну папку, поиск всегда рекурсивный.
 
     Args:
         paths: A list of strings, where each string can be a path to a .md file
@@ -17,6 +18,10 @@ def find_markdown_files(paths: List[str], recursive: bool) -> List[str]:
         A sorted list of unique paths to .md files.
     """
     markdown_files: Set[str] = set()
+    # Если paths содержит ровно один элемент и это папка — всегда рекурсивно
+    force_recursive = False
+    if len(paths) == 1 and os.path.isdir(paths[0]):
+        force_recursive = True
     for path_item in paths:
         if os.path.isfile(path_item):
             if path_item.lower().endswith(".md"):
@@ -24,7 +29,7 @@ def find_markdown_files(paths: List[str], recursive: bool) -> List[str]:
             else:
                 print(f"Предупреждение: Входной файл '{path_item}' не является Markdown (.md) файлом и будет проигнорирован.", file=sys.stderr)
         elif os.path.isdir(path_item):
-            if recursive:
+            if recursive or force_recursive:
                 for root, _, files in os.walk(path_item):
                     for file in files:
                         if file.lower().endswith(".md"):
@@ -93,8 +98,8 @@ def merge_markdown_files(
         if output_dir: # If output_file includes a path
             os.makedirs(output_dir, exist_ok=True)
 
-        with open(output_file, 'w', encoding='utf-8') as f:
-            f.write("".join(merged_content))
+        with open(output_file, 'w', encoding='utf-8') as outfile:
+            outfile.write("".join(merged_content))
         print(f"\n✅ Успешно объединено {len(input_files)} файлов в '{output_file}'.")
     except Exception as e:
         print(f"\n❌ Ошибка при записи в выходной файл '{output_file}': {e}", file=sys.stderr)
@@ -153,18 +158,20 @@ def main():
     args = parser.parse_args()
 
     # Process separator string to interpret escape sequences like \n
-    processed_separator = args.separator.encode('latin1').decode('unicode_escape')
+    processed_separator = args.separator.replace("\\n", "\n").replace("\\t", "\t")
+    print(f"ℹ️  Разделитель будет: {repr(processed_separator)}")
 
     # Find all markdown files from input paths
+    print("📄 Поиск Markdown файлов...")
     markdown_files_to_merge = find_markdown_files(args.input, args.recursive)
 
     if not markdown_files_to_merge:
-        print("Не найдено Markdown файлов для объединения. Проверьте входные пути.", file=sys.stderr)
+        print("❌ Не найдено Markdown файлов для объединения. Проверьте входные пути.", file=sys.stderr)
         sys.exit(1)
 
-    print(f"Найдено {len(markdown_files_to_merge)} Markdown файлов для объединения:")
+    print(f"➕ Найдено {len(markdown_files_to_merge)} Markdown файлов для объединения:")
     for md_file in markdown_files_to_merge:
-        print(f"  - {md_file}")
+        print(f"   ➖ {md_file}")
 
     merge_markdown_files(
         markdown_files_to_merge,
@@ -173,6 +180,7 @@ def main():
         include_filenames=args.include_filenames,
         filename_header_level=args.filename_header_level
     )
+    print(f"✅ Объединение завершено. Итоговый файл: {args.output}")
 
 if __name__ == "__main__":
     main()
