@@ -11,14 +11,14 @@ if PROJECT_ROOT not in sys.path:
     sys.path.append(PROJECT_ROOT)
 
 # Цветовые коды ANSI
-RESET = "\033[0m"
-BOLD = "\033[1m"
-GREEN = "\033[92m"
-YELLOW = "\033[93m"
-RED = "\033[91m"
-BLUE = "\033[94m"
-CYAN = "\033[96m"
-MAGENTA = "\033[95m"
+RESET = "\\033[0m"
+BOLD = "\\033[1m"
+GREEN = "\\033[92m"
+YELLOW = "\\033[93m"
+RED = "\\033[91m"
+BLUE = "\\033[94m"
+CYAN = "\\033[96m"
+MAGENTA = "\\033[95m"
 
 SEPARATOR = f"{CYAN}{'-'*56}{RESET}"
 
@@ -124,13 +124,13 @@ def log_to_memory_compiler(content, project_name, section):
     # We assume the default path for now, or could use an env var
     compiler_path = os.environ.get("MEMORY_COMPILER_PATH", "E:/Claude-Memory-Compiler")
     append_script = os.path.join(compiler_path, "scripts", "append.py")
-    
+
     if not os.path.exists(append_script):
         print(f"  {YELLOW}⚠️ Memory Compiler не найден по пути: {compiler_path}. Пропуск логирования.{RESET}")
         return
 
     print(f"  {BLUE}📝 Отправка данных в Memory Compiler ({section})...{RESET}")
-    
+
     # We use a temp file to pass large content to avoid shell limits
     import tempfile
     with tempfile.NamedTemporaryFile(mode='w', suffix='.md', delete=False, encoding='utf-8') as tmp:
@@ -140,13 +140,13 @@ def log_to_memory_compiler(content, project_name, section):
     try:
         # Run uv run python E:/Claude-Memory-Compiler/scripts/append.py ...
         cmd = [
-            "uv", "run", "--directory", compiler_path, 
+            "uv", "run", "--directory", compiler_path,
             "python", append_script,
             "--project", project_name,
             "--section", section,
             "--file", tmp_path
         ]
-        
+
         # Use subprocess.run and hide output unless it fails
         result = subprocess.run(cmd, capture_output=True, text=True)
         if result.returncode == 0:
@@ -182,7 +182,7 @@ def handle_parse(args):
                     processed_count += 1
             else:
                 print(f"  Пропуск не-JSON файла: {filename}")
-        print(f"\nОбработано {processed_count} потенциальных файлов из {args.input_dir}.")
+        print(f"\\nОбработано {processed_count} потенциальных файлов из {args.input_dir}.")
         print(f"Успешно распарсено и сохранено {successful_parses} файлов.")
     else:
         print("Ошибка: Необходимо указать --input_file или --input_dir для команды parse.", file=sys.stderr)
@@ -261,6 +261,29 @@ def handle_apply_overrides(args):
     else:
         print(f'{GREEN}Оверрайды успешно применены!{RESET}')
 
+def handle_log(args):
+    """Обработка команды 'log' для ручного логирования файлов в Memory Compiler."""
+    input_file = args.input_file
+    if not os.path.isfile(input_file):
+        print(f"{RED}❌ Ошибка: Файл не найден: {input_file}{RESET}", file=sys.stderr)
+        return
+
+    section = args.section if args.section else f"Manual Log: {os.path.basename(input_file)}"
+
+    try:
+        with open(input_file, 'r', encoding='utf-8') as f:
+            content = f.read()
+
+        print(f"{BOLD}{BLUE}🚀 Запуск команды [log] 🚀{RESET}")
+        print(SEPARATOR)
+        print(f"{BOLD}📄 Файл:{RESET} {os.path.normpath(input_file)}")
+        print(f"{BOLD}📁 Раздел:{RESET} {section}")
+        print(SEPARATOR)
+
+        log_to_memory_compiler(content, "Google-Chat-Utils", section)
+    except Exception as e:
+        print(f"{RED}❌ Ошибка при чтении файла {input_file}: {e}{RESET}", file=sys.stderr)
+
 def main():
     """Main function for the CLI."""
     parser = argparse.ArgumentParser(
@@ -317,6 +340,17 @@ def main():
     apply_parser.add_argument('--fi_mode', choices=['replace', 'prepend'], default='replace', help='Mode for .fi: replace or prepend (default: replace)')
     apply_parser.add_argument('--li_mode', choices=['replace', 'append'], default='replace', help='Mode for .li: replace or append (default: replace)')
     apply_parser.set_defaults(func=handle_apply_overrides)
+
+    # --- Parser for the 'log' command ---
+    log_parser = subparsers.add_parser("log",
+        help="Log any .md or text file to the Memory Compiler daily log.",
+        description="Reads a text file and appends its content to the Google-Chat-Utils daily log in the Memory Compiler."
+    )
+    log_parser.add_argument("--input_file", "-i", metavar="FILE_PATH", required=True,
+                            help="Path to the file you want to log.")
+    log_parser.add_argument("--section", "-s", metavar="SECTION_NAME",
+                            help="Title for the section in the daily log. Default: Manual Log: <filename>")
+    log_parser.set_defaults(func=handle_log)
 
     if len(sys.argv) == 1: # If no command is provided, print help and exit
         parser.print_help(sys.stderr)
