@@ -1,0 +1,40 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --directory E:/Claude-Memory-Compiler python E:/Claude-Memory-Compiler/hooks/session-start.py",
+            "timeout": 20
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --directory E:/Claude-Memory-Compiler python E:/Claude-Memory-Compiler/hooks/pre-compact.py",
+            "timeout": 20
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --directory E:/Claude-Memory-Compiler python E:/Claude-Memory-Compiler/hooks/session-end.py",
+            "timeout": 20
+          }
+        ]
+      }
+    ]
+  }
+}

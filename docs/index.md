@@ -9,13 +9,24 @@
 - [transformer](./transformer.md) — трансформация схем
 
 ## 🚀 Быстрые примеры CLI
+- Применение оверрайдов к Studio JSON:
+  ```bash
+  python utils/cli_v3.py apply_overrides_to_studio_json \
+    --input_studio_json data/Example \
+    --output_studio_json data/Example_overridden.json \
+    --si_file data/Example.si \
+    --fi_file data/Example.fi \
+    --li_file data/Example.li \
+    --fi_mode replace \
+    --li_mode append
+  ```
 - Парсинг:
   ```bash
-  python -m utils.cli_v3 parse --input_file data/Example1 --output_prefix output_data/
+  python -m utils.cli_v3 parse --input_file data/Example_overridden.json --output_prefix output_data/
   ```
 - Реконструкция:
   ```bash
-  python -m utils.cli_v3 reconstruct --input_json output_data/Example1_intermediate.json --output_py output_data/Example1_reconstructed.py --template_dir utils/templates/ --template_name gemini_studio_default.py.tpl --api_key_var_name "MY_API_KEY"
+  python -m utils.cli_v3 reconstruct --input_json output_data/Example_overridden_intermediate.json --output_py output_data/Example_reconstructed.py --template_dir utils/templates/ --template_name gemini_studio_default.py.tpl --api_key_var_name "MY_API_KEY" --model_name gemini-pro
   ```
 - Объединение Markdown:
   ```bash
@@ -30,7 +41,7 @@
 ```python
 from utils.parsing.google_studio_parser import GoogleAIStudioJSONParser
 parser = GoogleAIStudioJSONParser()
-data = parser.parse('data/Example1')
+data = parser.parse('data/Example_overridden.json')
 md = parser.to_markdown(data)
 ```
 

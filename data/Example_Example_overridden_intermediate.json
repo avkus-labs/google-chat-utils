@@ -1,0 +1,182 @@
+{
+  "source_file_name": "Example_overridden.json",
+  "parsed_at_timestamp": "2025-06-08T22:53:29.110937Z",
+  "run_settings": {
+    "model": "models/gemini-2.5-pro-preview-05-06",
+    "temperature": 1.0,
+    "top_p": 0.95,
+    "top_k": 64,
+    "max_output_tokens": 65536,
+    "response_mime_type": "text/plain",
+    "response_schema": null,
+    "function_declarations": null,
+    "enable_code_execution": false,
+    "enable_search_as_tool": false,
+    "enable_browse_as_tool": false,
+    "enable_auto_function_response": false,
+    "raw_settings": {
+      "temperature": 1.0,
+      "model": "models/gemini-2.5-pro-preview-05-06",
+      "topP": 0.95,
+      "topK": 64,
+      "maxOutputTokens": 65536,
+      "safetySettings": [
+        {
+          "category": "HARM_CATEGORY_HARASSMENT",
+          "threshold": "OFF"
+        },
+        {
+          "category": "HARM_CATEGORY_HATE_SPEECH",
+          "threshold": "OFF"
+        },
+        {
+          "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+          "threshold": "OFF"
+        },
+        {
+          "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+          "threshold": "OFF"
+        }
+      ],
+      "responseMimeType": "text/plain",
+      "enableCodeExecution": false,
+      "enableSearchAsATool": false,
+      "enableBrowseAsATool": false,
+      "enableAutoFunctionResponse": false
+    }
+  },
+  "dialogue_history": [
+    {
+      "role": "user",
+      "parts": [
+        {
+          "content": "Это первое пользовательское сообщение, добавленное через override.",
+          "type": "TextPart"
+        }
+      ],
+      "turn_id": 1,
+      "token_count": null,
+      "finish_reason": null,
+      "citations": []
+    },
+    {
+      "role": "model",
+      "parts": [
+        {
+          "content": "**Mapping Parameters Now**\n\nI've begun mapping the parameters to the function arguments. I'm focusing on the types: String, Integer, and Boolean. I'm working to ensure a correct and seamless argument transfer.\n\n\n",
+          "type": "ThoughtsPart"
+        },
+        {
+          "name": "someFunction",
+          "args": {
+            "Boolean": false,
+            "Integer": 26.0,
+            "String": "Hi"
+          },
+          "type": "FunctionCallPart"
+        },
+        {
+          "name": "someFunction",
+          "response_content": {
+            "String_output": "Это строка, сгенерированная someFunction",
+            "Number_output": 10.5,
+            "Integer_output": 100,
+            "Boolean_output": false,
+            "Object_output": {
+              "String": "Вложенная строка ответа",
+              "Number": 20.2,
+              "Integer": 200,
+              "Bollean": true
+            },
+            "Enum_output": "value_1"
+          },
+          "type": "FunctionResponsePart"
+        }
+      ],
+      "turn_id": 1,
+      "token_count": 178,
+      "finish_reason": "STOP",
+      "citations": []
+    },
+    {
+      "role": "model",
+      "parts": [
+        {
+          "content": "**Defining Function Parameters**\n\nI've determined the parameters needed for the `someFunction` call. I'll pass \"Hi\" as a string, 26 as an integer, and False as a boolean. I'm now structuring the call accordingly.\n\n\n",
+          "type": "ThoughtsPart"
+        },
+        {
+          "content": "Я вызвал функцию `someFunction` со следующими параметрами: строка \"Hi\", число 26 и логическое значение \"ложь\". Вот ответ от функции:\n```json\n{\"someFunction_response\": {\"Boolean_output\": False, \"Enum_output\": \"value_1\", \"Integer_output\": 100, \"Number_output\": 10.5, \"Object_output\": {\"Bollean\": True, \"Integer\": 200, \"Number\": 20.2, \"String\": \"Вложенная строка ответа\"}, \"String_output\": \"Это строка, сгенерированная someFunction\"}}\n```",
+          "type": "TextPart"
+        }
+      ],
+      "turn_id": 2,
+      "token_count": 191,
+      "finish_reason": "STOP",
+      "citations": []
+    },
+    {
+      "role": "user",
+      "parts": [
+        {
+          "content": "Тест Grounding with  Google Search.  Gemini, ответ просто \"Ok\"",
+          "type": "TextPart"
+        }
+      ],
+      "turn_id": 3,
+      "token_count": 19,
+      "finish_reason": null,
+      "citations": []
+    },
+    {
+      "role": "model",
+      "parts": [
+        {
+          "content": "**Responding to Instructions**\n\nOk.\n\n\n",
+          "type": "ThoughtsPart"
+        },
+        {
+          "content": "Ok.",
+          "type": "TextPart"
+        }
+      ],
+      "turn_id": 3,
+      "token_count": 22,
+      "finish_reason": "STOP",
+      "citations": []
+    },
+    {
+      "role": "user",
+      "parts": [
+        {
+          "content": "Тест Structured output.  Gemini, ответ просто \"Ok\"",
+          "type": "TextPart"
+        }
+      ],
+      "turn_id": 4,
+      "token_count": 15,
+      "finish_reason": null,
+      "citations": []
+    },
+    {
+      "role": "model",
+      "parts": [
+        {
+          "content": "**Acknowledging the Request**\n\nOkay, I've processed the user's request. I understand the task requires a simple \"Ok\" response. I'm now verifying the response against the \"String\" field within the provided JSON schema to ensure compliance.\n\n\n",
+          "type": "ThoughtsPart"
+        },
+        {
+          "content": "{\"String\": \"Ok\"}",
+          "type": "TextPart"
+        }
+      ],
+      "turn_id": 4,
+      "token_count": 73,
+      "finish_reason": "STOP",
+      "citations": []
+    }
+  ],
+  "source_platform": "Google AI Studio",
+  "system_instruction": "Новая системная инструкция для теста с оверрайдом.",
+  "tool_configurations": []
+}

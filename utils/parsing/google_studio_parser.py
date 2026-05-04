@@ -164,13 +164,14 @@ class GoogleAIStudioJSONParser:
         (Adapted from extract_tools_info in parser_v2.py)
         """
         configs = []
-        if getattr(run_settings, 'enable_code_execution', False):
+        if getattr(run_settings, 'enable_code_execution', False) is True:
             configs.append(ToolConfiguration(type="code_execution"))
         if getattr(run_settings, 'function_declarations', None):
-            configs.append(ToolConfiguration(type="function_declaration", functions=run_settings.function_declarations))
-        if getattr(run_settings, 'enable_search_as_tool', False):
+            if run_settings.function_declarations:
+                configs.append(ToolConfiguration(type="function_declaration", functions=run_settings.function_declarations))
+        if getattr(run_settings, 'enable_search_as_tool', False) is True:
             configs.append(ToolConfiguration(type="google_search_enabled"))
-        if getattr(run_settings, 'enable_browse_as_tool', False):
+        if getattr(run_settings, 'enable_browse_as_tool', False) is True:
             configs.append(ToolConfiguration(type="browse_enabled"))
         print(f'DEBUG _parse_tool_configuration: {configs}')
         return configs
@@ -255,22 +256,24 @@ class GoogleAIStudioJSONParser:
                 source_chunks = []
 
         current_model_turn_parts: List[ChatMessagePart] = []
-        current_model_turn_meta: Dict[str, Any] = {} # For finish_reason, token_count, citations for the turn
+        current_model_turn_meta: Dict[str, Any] = {}
+        turn_counter = 1  # Для уникальных turn_id
 
         def finalize_model_turn():
-            nonlocal current_model_turn_parts, current_model_turn_meta
+            nonlocal current_model_turn_parts, current_model_turn_meta, turn_counter
             if current_model_turn_parts:
                 turn_to_add = DialogueTurn(
                     role="model",
                     parts=list(current_model_turn_parts), # Take a copy
                     finish_reason=current_model_turn_meta.get('finish_reason'),
                     token_count=current_model_turn_meta.get('token_count'),
-                    citations=current_model_turn_meta.get('citations')
-                    # turn_id can be added if available or generated
+                    citations=current_model_turn_meta.get('citations'),
+                    turn_id=turn_counter
                 )
                 processed_history.append(turn_to_add)
                 current_model_turn_parts.clear()
                 current_model_turn_meta.clear()
+                turn_counter += 1
 
         for chunk_index, chunk in enumerate(source_chunks):
             if not isinstance(chunk, dict):
@@ -354,8 +357,8 @@ class GoogleAIStudioJSONParser:
                         role="user",
                         parts=current_chunk_extracted_parts,
                         token_count=chunk_token_count,
-                        citations=chunk_citations
-                        # turn_id can be added if available
+                        citations=chunk_citations,
+                        turn_id=turn_counter
                     )
                     processed_history.append(user_turn)
             elif role == "model":
@@ -382,10 +385,15 @@ class GoogleAIStudioJSONParser:
                 finalize_model_turn()
                 if current_chunk_extracted_parts:
                     # print(f"Warning: Chunk with role '{role}' found. Storing as is.")
-                    processed_history.append(DialogueTurn(role=role or "unknown", parts=current_chunk_extracted_parts))
+                    processed_history.append(DialogueTurn(role=role or "unknown", parts=current_chunk_extracted_parts, turn_id=turn_counter))
 
         finalize_model_turn() # Finalize any last pending model turn
         print(f'DEBUG _parse_dialogue_history: {processed_history}')
+
+        # Присваиваем turn_id всем ходам, если не был установлен
+        for idx, turn in enumerate(processed_history, 1):
+            if not getattr(turn, 'turn_id', None):
+                turn.turn_id = idx
         return processed_history
 
     def to_markdown(self, intermediate_data: IntermediateChatData) -> str:
@@ -455,6 +463,8 @@ class GoogleAIStudioJSONParser:
                         md_add(f"    </function>")
                     md_add("  </tool>")
             md_add("</configured_tools>\n")
+        else:
+            md_add("<tools_placeholder>В этом чате не было активных инструментов (function calling, code execution, search, browse). Для подробностей см. исходный код чата или JSON-представление.</tools_placeholder>\n")
 
         # System Instruction
         md_add("<system_instruction>")
@@ -518,6 +528,66 @@ class GoogleAIStudioJSONParser:
                             md_add(f"    <unknown_part type='{type(part).__name__}'><![CDATA[{str(part)}]]></unknown_part>")
                 md_add(f"  </turn>")
         md_add("</dialogue_history>")
+        return "\n".join(markdown_parts)
+
+    def to_human_markdown(self, intermediate_data: IntermediateChatData) -> str:
+        """
+        Generates a clean, human-readable Markdown string representing the chat dialogue.
+        Suitable for reading in Obsidian, GitHub, or any standard Markdown viewer.
+        """
+        markdown_parts = []
+        md_add = markdown_parts.append
+
+        md_add(f"# Chat: {intermediate_data.source_file_name}\n")
+        
+        if intermediate_data.system_instruction and intermediate_data.system_instruction.text.strip():
+            md_add("### System Instruction")
+            md_add(f"> {intermediate_data.system_instruction.text.strip().replace('\\n', '\\n> ')}\n")
+
+        if not intermediate_data.dialogue_history:
+            md_add("*No dialogue history available.*")
+            return "\n".join(markdown_parts)
+
+        for turn in intermediate_data.dialogue_history:
+            role_header = "**User**" if turn.role == "user" else "**Model**"
+            md_add(f"### {role_header}")
+            
+            if not turn.parts:
+                md_add("*Empty message*\n")
+                continue
+
+            current_text = []
+            for part in turn.parts:
+                if isinstance(part, TextPart):
+                    current_text.append(part.content)
+                else:
+                    if current_text:
+                        md_add("".join(current_text) + "\n")
+                        current_text = []
+                        
+                    if isinstance(part, ThoughtsPart):
+                        md_add(f"<details><summary>🧠 Model Thoughts</summary>\n\n{part.content}\n\n</details>\n")
+                    elif isinstance(part, ExecutableCodePart):
+                        lang = part.language.lower() if part.language else "python"
+                        md_add(f"**Code Execution ({part.language})**:\n```{lang}\n{part.code_content}\n```\n")
+                    elif isinstance(part, CodeExecutionResultPart):
+                        md_add(f"**Execution Result ({part.outcome})**:\n```\n{part.output_content}\n```\n")
+                    elif isinstance(part, FunctionCallPart):
+                        md_add(f"**Function Call**: `{part.name}`\n```json\n{json.dumps(part.args, indent=2, ensure_ascii=False)}\n```\n")
+                    elif isinstance(part, FunctionResponsePart):
+                        md_add(f"**Function Response**: `{part.name}`\n```json\n{json.dumps(part.response_content, indent=2, ensure_ascii=False)}\n```\n")
+                    elif isinstance(part, UriReferencePart):
+                        md_add(f"*[Media Attachment: {part.source_type} - {part.identifier}]*\n")
+                    elif isinstance(part, InlineDataPart):
+                        md_add(f"*[Inline Data: {part.mime_type}]*\n")
+                    else:
+                        md_add(f"*[Unknown Part: {type(part).__name__}]*\n")
+            
+            if current_text:
+                md_add("".join(current_text) + "\n")
+                    
+            md_add("---")
+
         return "\n".join(markdown_parts)
 
     # --- Main parse method ---

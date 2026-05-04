@@ -53,9 +53,9 @@
 *   **Парсинг чата Google AI Studio (`parse`)**
     *   Парсинг одного файла:
         ```bash
-        python utils/cli_v3.py parse --input_file data/SecOps-Flash --output_prefix output_data/
+        python utils/cli_v3.py parse --input_file "G:\Мой диск\Google AI Studio\Root-Orchestrator-Gemini" --output_prefix "output_data"
         ```
-        Результат будет сохранен в `output_data/SecOps-Flash_intermediate.json` и `output_data/SecOps-Flash_raw_rag.md`.
+        Результат будет сохранен в `G:\Мой диск\Google AI Studio\ouput_data/your_file_intermediate.json` и `G:\Мой диск\Google AI Studio\ouput_data/your_file_raw_rag.md`.
 
     *   Парсинг всех JSON-файлов в директории:
         ```bash

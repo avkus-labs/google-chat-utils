@@ -17,6 +17,8 @@ md = parser.to_markdown(data)
 - Все выходные файлы кладутся в `output_data/` без подпапок.
 - Имена файлов формируются на основе имени входного файла (например, `Example6_intermediate.json`, `Example6_raw_rag.md`).
 
+**Примечание:** Парсер работает только с "сырыми" JSON-файлами Studio, в которые все необходимые оверрайды уже были применены (например, с помощью `studio_json_modifier.py` или команды `apply_overrides_to_studio_json`).
+
 ---
 
 Документация: см. `../docs/parser.md` 

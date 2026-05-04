@@ -152,10 +152,7 @@ class GeminiAPICodeReconstructor:
 
     def reconstruct(self, intermediate_data: IntermediateChatData,
                     template_name: str,
-                    api_key_var_name: str = "YOUR_API_KEY",
-                    si_file: str = None,
-                    fi_file: str = None,
-                    li_file: str = None
+                    api_key_var_name: str = "YOUR_API_KEY"
                    ) -> str:
         print('START RECONSTRUCT')
         print('DEBUG: dialogue_history:')
@@ -179,81 +176,15 @@ class GeminiAPICodeReconstructor:
         source_file_name_str = intermediate_data.source_file_name
         api_key_repr = 'os.environ.get("GEMINI_API_KEY")'
 
-        # --- SI override ---
-        if si_file:
-            try:
-                with open(si_file, 'r', encoding='utf-8') as f:
-                    si_text = f.read().strip()
-                if si_text:
-                    from utils.core.chat_elements import SystemInstruction
-                    intermediate_data.system_instruction = SystemInstruction(text=si_text)
-            except Exception as e:
-                print(f"[SI override] Не удалось прочитать файл {si_file}: {e}")
-        # --- FI override ---
-        fi_turn = None
-        if fi_file:
-            try:
-                with open(fi_file, 'r', encoding='utf-8') as f:
-                    fi_text = f.read().strip()
-                if fi_text:
-                    from utils.core.chat_elements import DialogueTurn, TextPart
-                    fi_turn = DialogueTurn(role="user", parts=[TextPart(content=fi_text)])
-            except Exception as e:
-                print(f"[FI override] Не удалось прочитать файл {fi_file}: {e}")
-        # --- LI override ---
-        li_turn = None
-        if li_file:
-            try:
-                with open(li_file, 'r', encoding='utf-8') as f:
-                    li_text = f.read().strip()
-                if li_text:
-                    from utils.core.chat_elements import DialogueTurn, TextPart
-                    li_turn = DialogueTurn(role="user", parts=[TextPart(content=li_text)])
-            except Exception as e:
-                print(f"[LI override] Не удалось прочитать файл {li_file}: {e}")
-
-        # --- contents_code_str ---
-        orig_history = intermediate_data.dialogue_history
-        # Обработка первого сообщения (fi)
-        if fi_turn:
-            rest_history = orig_history
-            if orig_history and orig_history[0].role == "user":
-                orig_first_text = ''
-                if orig_history[0].parts and hasattr(orig_history[0].parts[0], 'content'):
-                    orig_first_text = orig_history[0].parts[0].content.strip()
-                if orig_first_text == fi_turn.parts[0].content.strip():
-                    rest_history = orig_history[1:]
-            new_history = [fi_turn] + rest_history
-        else:
-            new_history = orig_history
-        # Обработка последнего сообщения (li)
-        if li_turn:
-            # Не дублируем, если последний turn уже user и совпадает с li_turn
-            if new_history and new_history[-1].role == "user":
-                orig_last_text = ''
-                if new_history[-1].parts and hasattr(new_history[-1].parts[0], 'content'):
-                    orig_last_text = new_history[-1].parts[0].content.strip()
-                if orig_last_text == li_turn.parts[0].content.strip():
-                    pass  # Не добавляем дубликат
-                else:
-                    new_history = new_history + [li_turn]
-            else:
-                new_history = new_history + [li_turn]
-        contents_code_str = self._generate_contents_code(new_history)
-
-        # --- tools_code_str ---
+        contents_code_str = self._generate_contents_code(intermediate_data.dialogue_history)
         tools_code_str = self._generate_tools_code(intermediate_data.tool_configurations)
-        # --- system_instruction_code_str ---
         if intermediate_data.system_instruction and intermediate_data.system_instruction.text:
             si_text = intermediate_data.system_instruction.text.replace('"""', '"')
             system_instruction_code_str = f'[types.Part.from_text(text="""{si_text}""")]'
         else:
             system_instruction_code_str = "None"
-        # --- generation_config_code_str ---
         generation_config_code_str = self._generate_generation_config_code(rs)
-        # --- response_mime_type_code_str ---
         response_mime_type_code_str = repr(rs.response_mime_type) if rs.response_mime_type else "None"
-        # --- response_schema_code_str ---
         response_schema_code_str = self._generate_response_schema_code(rs)
 
         replacements = {

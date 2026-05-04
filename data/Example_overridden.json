@@ -1,0 +1,135 @@
+{
+  "runSettings": {
+    "temperature": 1.0,
+    "model": "models/gemini-2.5-pro-preview-05-06",
+    "topP": 0.95,
+    "topK": 64,
+    "maxOutputTokens": 65536,
+    "safetySettings": [
+      {
+        "category": "HARM_CATEGORY_HARASSMENT",
+        "threshold": "OFF"
+      },
+      {
+        "category": "HARM_CATEGORY_HATE_SPEECH",
+        "threshold": "OFF"
+      },
+      {
+        "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+        "threshold": "OFF"
+      },
+      {
+        "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+        "threshold": "OFF"
+      }
+    ],
+    "responseMimeType": "text/plain",
+    "enableCodeExecution": false,
+    "enableSearchAsATool": false,
+    "enableBrowseAsATool": false,
+    "enableAutoFunctionResponse": false
+  },
+  "systemInstruction": {
+    "text": "Новая системная инструкция для теста с оверрайдом."
+  },
+  "chunkedPrompt": {
+    "chunks": [
+      {
+        "author": "user",
+        "role": "user",
+        "parts": [
+          {
+            "text": "Это первое пользовательское сообщение, добавленное через override."
+          }
+        ]
+      },
+      {
+        "text": "**Mapping Parameters Now**\n\nI've begun mapping the parameters to the function arguments. I'm focusing on the types: String, Integer, and Boolean. I'm working to ensure a correct and seamless argument transfer.\n\n\n",
+        "role": "model",
+        "tokenCount": 53,
+        "isThought": true,
+        "thoughtSignatures": [
+          ""
+        ]
+      },
+      {
+        "role": "model",
+        "finishReason": "STOP",
+        "tokenCount": 125,
+        "resolvedFunctionCall": {
+          "functionCall": {
+            "name": "someFunction",
+            "args": {
+              "Boolean": false,
+              "Integer": 26.0,
+              "String": "Hi"
+            }
+          },
+          "response": "{\n  \"String_output\": \"Это строка, сгенерированная someFunction\",\n  \"Number_output\": 10.5,\n  \"Integer_output\": 100,\n  \"Boolean_output\": false,\n  \"Object_output\": {\n    \"String\": \"Вложенная строка ответа\",\n    \"Number\": 20.2,\n    \"Integer\": 200,\n    \"Bollean\": true \n  },\n  \"Enum_output\": \"value_1\"\n}"
+        }
+      },
+      {
+        "text": "**Defining Function Parameters**\n\nI've determined the parameters needed for the `someFunction` call. I'll pass \"Hi\" as a string, 26 as an integer, and False as a boolean. I'm now structuring the call accordingly.\n\n\n",
+        "role": "model",
+        "tokenCount": 50,
+        "isThought": true,
+        "thoughtSignatures": [
+          ""
+        ]
+      },
+      {
+        "text": "Я вызвал функцию `someFunction` со следующими параметрами: строка \"Hi\", число 26 и логическое значение \"ложь\". Вот ответ от функции:\n```json\n{\"someFunction_response\": {\"Boolean_output\": False, \"Enum_output\": \"value_1\", \"Integer_output\": 100, \"Number_output\": 10.5, \"Object_output\": {\"Bollean\": True, \"Integer\": 200, \"Number\": 20.2, \"String\": \"Вложенная строка ответа\"}, \"String_output\": \"Это строка, сгенерированная someFunction\"}}\n```",
+        "role": "model",
+        "finishReason": "STOP",
+        "tokenCount": 141
+      },
+      {
+        "text": "Тест Grounding with  Google Search.  Gemini, ответ просто \"Ok\"",
+        "role": "user",
+        "tokenCount": 19
+      },
+      {
+        "text": "**Responding to Instructions**\n\nOk.\n\n\n",
+        "role": "model",
+        "tokenCount": 19,
+        "isThought": true,
+        "thoughtSignatures": [
+          ""
+        ]
+      },
+      {
+        "text": "Ok.",
+        "role": "model",
+        "finishReason": "STOP",
+        "tokenCount": 3
+      },
+      {
+        "text": "Тест Structured output.  Gemini, ответ просто \"Ok\"",
+        "role": "user",
+        "tokenCount": 15
+      },
+      {
+        "text": "**Acknowledging the Request**\n\nOkay, I've processed the user's request. I understand the task requires a simple \"Ok\" response. I'm now verifying the response against the \"String\" field within the provided JSON schema to ensure compliance.\n\n\n",
+        "role": "model",
+        "tokenCount": 66,
+        "isThought": true,
+        "thoughtSignatures": [
+          ""
+        ]
+      },
+      {
+        "text": "{\"String\": \"Ok\"}",
+        "role": "model",
+        "finishReason": "STOP",
+        "tokenCount": 7,
+        "isJson": true
+      }
+    ],
+    "pendingInputs": [
+      {
+        "text": "",
+        "role": "user"
+      }
+    ]
+  }
+}

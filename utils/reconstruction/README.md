@@ -12,6 +12,8 @@ reconstructor = GeminiAPICodeReconstructor(template_dir='utils/templates')
 py_code = reconstructor.reconstruct(intermediate_data, 'gemini_studio_default.py.tpl')
 ```
 
+**Примечание:** Реконструктор работает только с промежуточным JSON (`IntermediateChatData`), в который все необходимые оверрайды уже были применены на этапе подготовки (например, с помощью `studio_json_modifier.py`).
+
 ## 🆕 reconstruct_studio_json
 
 Воссоздаёт валидный JSON-файл для Google AI Studio из промежуточного формата:
