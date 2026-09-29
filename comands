@@ -1,3 +1,0 @@
-python utils/cli_v3.py parse --input_file "G:/Мой диск/Google AI Studio/DevOps & n8n Expert" --output_prefix "G:/Мой диск/Google AI Studio/output_data/"
-python utils/cli_v3.py apply_overrides_to_studio_json --input_studio_json RAW.json --output_studio_json MODIFIED.json --si_file my.si --fi_file my.fi --li_file my.li --fi_mode replace --li_mode append
-python utils/cli_v3.py reconstruct --input_json data/Example_Example_overridden_intermediate.json --output_py Example_reconstructed.py --template_dir templates --template_name gemini_studio_dynamic_si.py.tpl --model_name gemini-pro

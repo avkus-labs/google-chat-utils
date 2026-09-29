@@ -1,0 +1,18 @@
+[project]
+name = "google-chat-utils"
+version = "0.4.0"
+description = "A powerful and flexible toolkit for parsing Google AI Studio chats, representing them as objects, generating Markdown for RAG, and reconstructing Python code for the Gemini API."
+requires-python = ">=3.9"
+dependencies = [
+    "google-generativeai",
+    "pdoc",
+]
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+ignore = ["E402", "E501"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

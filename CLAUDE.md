@@ -4,97 +4,116 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Commonly Used Commands
 
-### Installation
+### Environment Setup
 
-1.  Create and activate a virtual environment:
-    ```bash
-    python -m venv venv
-    source venv/bin/activate # for Linux/macOS
-    # venv\Scripts\activate # for Windows
-    ```
-2.  Install dependencies:
-    ```bash
-    pip install -r requirements.txt
-    ```
-
-### Linting
-
-To run the linter, use the following command:
 ```bash
+# Create and activate virtual environment
+python -m venv venv
+venv\Scripts\activate       # Windows
+# source venv/bin/activate  # Linux/macOS
+
+# Install dependencies
+pip install -r requirements.txt
+```
+
+### Testing & Linting
+
+```bash
+# Run all tests (run from project root)
+pytest
+
+# Run a single test file
+pytest tests/test_parsing.py
+pytest tests/test_reconstruction.py
+pytest tests/test_studio_json_reconstruction.py
+
+# Run a single test function
+pytest tests/test_parsing.py -k test_parse_example1
+
+# Run tests with coverage
+coverage run -m pytest && coverage report
+
+# Lint code
 pylint utils/ tests/
 ```
 
-### Running Tests
+### CLI Commands (`utils/cli_v3.py`)
 
--   To run all tests, navigate to the `utils` directory and run:
-    ```bash
-    pytest
-    ```
--   To run a single test file:
-    ```bash
-    pytest tests/test_parsing.py
-    ```
-- To run tests with coverage:
-    ```bash
-    coverage run -m pytest && coverage report
-    ```
+All commands can be run directly from the repository root:
 
-### Parsing a Chat
-
--   To parse a single Google AI Studio chat export:
-    ```bash
-    python utils/cli_v3.py parse --input_file <path_to_chat_file> --output_prefix <output_directory>
-    ```
-- To parse all JSON files in a directory:
-    ```bash
-    python utils/cli_v3.py parse --input_dir data/ --output_prefix output_data/
-    ```
-
-### Reconstructing Python Code
-
--   To reconstruct Python code from a parsed chat:
-    ```bash
-    python utils/cli_v3.py reconstruct \
-        --input_json <path_to_intermediate.json> \
-        --output_py <output_python_file.py> \
-        --template_dir templates/ \
-        --template_name gemini_studio_vanilla.py.tpl
-    ```
-
-### Reconstructing a Studio JSON File
-
-- To reconstruct a valid JSON file for Google AI Studio from an intermediate JSON file:
-    ```bash
-    python utils/cli_v3.py reconstruct_studio_json \
-        --input_intermediate_json <path_to_intermediate.json> \
-        --output_studio_json_file <output_studio_json_file>
-    ```
-
-### Transforming Schemas
-- **OpenAI JSON Schema → Gemini SchemaData (JSON):**
+- **Parse Google AI Studio Chat Exports:**
   ```bash
-  python -m utils.transformation.schema_transformer \
-      --openai_to_gemini data/example_openai_schema.json output_data/example_gemini_schema.json
-  ```
-- **Gemini SchemaData (JSON) → OpenAI JSON Schema:**
-  ```bash
-  python -m utils.transformation.schema_transformer \
-      --gemini_to_openai data/example_gemini_schema.json output_data/example_openai_schema_out.json
-  ```
-- **Gemini SchemaData (JSON) → Python-код для genai.types.Schema:**
-  ```bash
-  python -m utils.transformation.schema_transformer \
-      --gemini_to_python data/example_gemini_schema.json output_data/example_gemini_schema.py
+  # Parse single file (generates intermediate.json, raw_rag.md, human.md in output_prefix)
+  python utils/cli_v3.py parse --input_file <path_to_chat_file> --output_prefix output_data/
+
+  # Parse directory of chat exports
+  python utils/cli_v3.py parse --input_dir data/ --output_prefix output_data/
+
+  # Parse and automatically send human.md to Memory Compiler daily log
+  python utils/cli_v3.py parse --input_file <path_to_chat_file> --output_prefix output_data/ --log_to_memory
   ```
 
-## Code Architecture
+- **Reconstruct Python Code:**
+  ```bash
+  python utils/cli_v3.py reconstruct \
+      --input_json <path_to_intermediate.json> \
+      --output_py <output_script_name.py> \
+      --template_dir templates/ \
+      --template_name gemini_studio_vanilla.py.tpl \
+      --model_name "gemini-2.5-flash"
+  ```
+  *(Note: `--model_name` is required. Available templates: `gemini_studio_vanilla.py.tpl`, `gemini_studio_dynamic_si.py.tpl`).*
 
-The project is structured as a Python library with a command-line interface. The core logic is in the `utils` directory, which is further divided into the following key modules:
+- **Apply Overrides to Raw Studio JSON:**
+  ```bash
+  python utils/cli_v3.py apply_overrides_to_studio_json \
+      --input_studio_json <path_to_raw.json> \
+      --output_studio_json <path_to_modified.json> \
+      --si_file <path_to.si> \
+      --fi_file <path_to.fi> \
+      --li_file <path_to.li> \
+      --fi_mode replace \
+      --li_mode replace
+  ```
 
--   `core`: Contains the data models for representing chat elements.
--   `parsing`: Includes the `GoogleAIStudioJSONParser` for parsing chat exports and generating Markdown.
--   `reconstruction`: Contains the `GeminiAPICodeReconstructor` for generating Python code from parsed chats.
--   `transformation`: Provides the `SchemaTransformer` for converting JSON Schema between different formats.
--   `cli_v3.py`: The main entry point for the command-line interface.
--   `tests`: Contains unit tests for the various components of the library.
--   `templates`: Stores the templates used for code reconstruction.
+- **Log Text / Markdown to Memory Compiler:**
+  ```bash
+  python utils/cli_v3.py log --input_file <path_to_file.md> --section "Custom Section Title"
+  ```
+
+### Schema Transformation
+
+```bash
+# OpenAI JSON Schema -> Gemini SchemaData (JSON)
+python -m utils.transformation.schema_transformer \
+    --openai_to_gemini data/example_openai_schema.json output_data/example_gemini_schema.json
+
+# Gemini SchemaData (JSON) -> OpenAI JSON Schema
+python -m utils.transformation.schema_transformer \
+    --gemini_to_openai data/example_gemini_schema.json output_data/example_openai_schema_out.json
+
+# Gemini SchemaData (JSON) -> Python code for genai.types.Schema
+python -m utils.transformation.schema_transformer \
+    --gemini_to_python data/example_gemini_schema.json output_data/example_gemini_schema.py
+```
+
+## High-Level Architecture
+
+The repository parses Google AI Studio chat session exports, converts them into a structured intermediate object model, exports Markdown for RAG/Memory Compiler, and reconstructs executable Python scripts or modified Studio JSON files.
+
+- **`utils/core/` (Data Models):**
+  - `chat_elements.py`: Defines object-oriented models for chats (`IntermediateChatData`, `ChatMessage`, and part types: `TextPart`, `ThoughtsPart`, `ExecutableCodePart`, `CodeExecutionResultPart`, `FunctionCallPart`, `FunctionResponsePart`, `InlineDataPart`, `UriReferencePart`). Handles serialization (`to_dict`) and deserialization (`from_dict`).
+  - `schema_elements.py`: Models for Gemini and OpenAI JSON schemas (`SchemaElement`, `Property`).
+
+- **`utils/parsing/` (Ingestion & Extraction):**
+  - `google_studio_parser.py`: Implements `GoogleAIStudioJSONParser`. Normalizes raw chat chunks, extracts system instructions and role turns (user/model), checks for companion override files (`.si` system instruction, `.fi` first input, `.li` last input), and generates both RAG Markdown (`_raw_rag.md`, `_human.md`) and intermediate JSON (`_intermediate.json`).
+
+- **`utils/reconstruction/` (Code Generation):**
+  - `gemini_code_reconstructor.py`: Implements `GeminiAPICodeReconstructor`. Reconstructs runnable Python scripts targeting Google GenAI SDK using templates in `templates/` (e.g. `gemini_studio_vanilla.py.tpl`).
+  - `studio_json_modifier.py`: Modifies raw Studio JSON by patching chunks directly with `.si`, `.fi`, and `.li` override files.
+
+- **`utils/transformation/` (Schema Conversion):**
+  - `schema_transformer.py`: Standalone CLI & converter between OpenAI JSON Schema, Gemini SchemaData, and Python `google.genai.types.Schema` code.
+
+- **`utils/cli_v3.py` (Unified CLI):**
+  - Orchestrates parser, reconstructor, Studio JSON modifier, and logging subcommands. Handles path normalization across Windows and Linux.

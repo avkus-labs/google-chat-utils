@@ -1,4 +1,5 @@
 google-generativeai
 pytest
-pylint
+ruff
 coverage
+pdoc
