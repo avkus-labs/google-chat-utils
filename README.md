@@ -1,4 +1,4 @@
-# 🚀 google-chat-utils v0.4.0: Интеграция с Memory Compiler и ООП-архитектура 🚀
+# 🚀 google-chat-utils v0.5.0: Дистилляция чатов и ООП-архитектура 🚀
 
 **Мощный и гибкий набор инструментов для парсинга чатов Google AI Studio, их объектного представления, генерации Markdown для RAG, реконструкции Python-кода и интеграции с Memory Compiler.**
 
@@ -6,6 +6,11 @@
 
 ## ✨ Ключевые особенности
 
+*   **Дистилляция чатов:**
+    *   **Подпапки вывода:** `parse` складывает артефакты каждого файла в `<output_prefix>/<имя>/`.
+    *   **Команда `distill`:** Дистилляция готовых `_human.md` через LLM (редакция секретов, чанкинг, верификация).
+    *   **`parse --distill`:** Дистилляция сразу после парсинга.
+    *   **Кэш:** Повторный запуск переиспользует результаты (`.distill_cache/`).
 *   **Интеграция с Memory Compiler:**
     *   **Автоматическая отправка в память:** Используйте флаг `--log_to_memory` (`-l`) с командой `parse` для автоматической отправки сгенерированного `human.md` в ваш Memory Compiler.
     *   **Ручная отправка логов:** Новая команда `log` позволяет отправлять содержимое любого текстового файла в Memory Compiler.
@@ -51,7 +56,13 @@
     ```bash
     python utils/cli_v3.py parse --input_file data/Example.json --output_prefix output_data/
     ```
-    *Результат будет сохранен в `output_data/Example_intermediate.json`, `output_data/Example_raw_rag.md` и `output_data/Example_human.md`.*
+    *Результат будет сохранён в `output_data/Example/Example_intermediate.json`, `output_data/Example/Example_raw_rag.md` и `output_data/Example/Example_human.md`.*
+
+*   **Парсинг с дистилляцией:**
+    ```bash
+    python utils/cli_v3.py parse --input_file data/Example.json --distill --distill_dry_run --llm_base_url "http://..." --llm_model "model"
+    ```
+    *Сначала всегда используйте `--distill_dry_run` для оценки стоимости.*
 
 *   **Парсинг всех JSON-файлов в директории:**
     ```bash
@@ -64,7 +75,22 @@
     ```
     *Содержимое `human.md` будет отправлено в Memory Compiler.*
 
-### 2. Отправка лога в Memory Compiler (`log`)
+### 2. Дистилляция готовых `_human.md` (`distill`)
+
+*   **Один файл (сначала сухой прогон):**
+    ```bash
+    python utils/cli_v3.py distill --input_file output_data/Chat/chat_human.md --distill_dry_run --llm_base_url "http://..." --llm_model "model"
+    ```
+*   **Реальный прогон (после проверки плана):**
+    ```bash
+    python utils/cli_v3.py distill --input_file output_data/Chat/chat_human.md --llm_base_url "http://..." --llm_model "model" --yes
+    ```
+*   **Директория (только `*_human.md`, без рекурсии):**
+    ```bash
+    python utils/cli_v3.py distill --input_dir output_data/Chat/ --distill_dry_run --llm_base_url "http://..." --llm_model "model"
+    ```
+
+### 3. Отправка лога в Memory Compiler (`log`)
 
 Отправка содержимого любого текстового файла в указанную секцию Memory Compiler.
 
@@ -72,7 +98,7 @@
 python utils/cli_v3.py log --input_file "path/to/your/file.md" --section "Your Section Name"
 ```
 
-### 3. Реконструкция Python-кода (`reconstruct`)
+### 4. Реконструкция Python-кода (`reconstruct`)
 
 ```bash
 python utils/cli_v3.py reconstruct \
@@ -83,7 +109,7 @@ python utils/cli_v3.py reconstruct \
 ```
 *Для изменения системной инструкции или сообщений используйте файлы-оверрайды (`.si`, `.fi`, `.li`), как описано в `CLAUDE.md`.*
 
-### 4. Реконструкция JSON для Google AI Studio (`reconstruct_studio_json`)
+### 5. Реконструкция JSON для Google AI Studio (`reconstruct_studio_json`)
 
 ```bash
 python utils/cli_v3.py reconstruct_studio_json \
@@ -91,7 +117,7 @@ python utils/cli_v3.py reconstruct_studio_json \
     --output_studio_json_file output_data/Example_studio.json
 ```
 
-### 5. Трансформация схем (`schema_transformer`)
+### 6. Трансформация схем (`schema_transformer`)
 
 *   **OpenAI → Gemini:**
     ```bash
@@ -110,6 +136,7 @@ python utils/cli_v3.py reconstruct_studio_json \
 
 *   **`utils/core`**: Базовые модели данных.
 *   **`utils/parsing`**: `GoogleAIStudioJSONParser` для парсинга и генерации Markdown.
+*   **`utils/distillation`**: Конвейер дистилляции — `chunker`, `redactor`, `llm_client`, `verifier`, `pipeline`, `safe_stem`.
 *   **`utils/reconstruction`**: `GeminiAPICodeReconstructor` для генерации Python-кода.
 *   **`utils/transformation`**: `SchemaTransformer` для преобразования JSON Schema.
 *   **`utils/cli_v3.py`**: Главный интерфейс командной строки.

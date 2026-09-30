@@ -3,7 +3,6 @@ import os
 import sys
 import json
 import subprocess
-import shutil
 
 # === Определение корня проекта ===
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -24,9 +23,11 @@ SEPARATOR = f"{CYAN}{'-'*56}{RESET}"
 
 print('START CLI')
 try:
-    from utils.parsing.google_studio_parser import GoogleAIStudioJSONParser, load_json_file
+    from utils.parsing.google_studio_parser import GoogleAIStudioJSONParser
     from utils.reconstruction.gemini_code_reconstructor import GeminiAPICodeReconstructor
-    from utils.core.chat_elements import IntermediateChatData, TextPart, ThoughtsPart, ExecutableCodePart, CodeExecutionResultPart, FunctionCallPart, FunctionResponsePart, InlineDataPart, UriReferencePart
+    from utils.core.chat_elements import TextPart, ThoughtsPart, ExecutableCodePart, CodeExecutionResultPart, FunctionCallPart, FunctionResponsePart, InlineDataPart, UriReferencePart
+    from utils.distillation.safe_stem import safe_stem
+    from utils.distillation import pipeline as distill_pipeline
 except Exception as e:
     print(f'{BOLD}{RED}IMPORT ERROR: {e}{RESET}')
     import traceback
@@ -56,6 +57,10 @@ def part_to_dict(part):
     return {"type": part.__class__.__name__}
 
 def process_single_parse_file(input_file_path: str, parser_instance: GoogleAIStudioJSONParser, output_prefix: str):
+    """Парсит один файл в подпапку <output_prefix>/<safe_stem>/.
+
+    Возвращает путь к записанному _human.md при успехе, иначе False.
+    """
     if not os.path.isfile(input_file_path):
         print(f"{RED}❌ Ошибка: Входной файл не найден: {input_file_path}{RESET}", file=sys.stderr)
         return False
@@ -69,15 +74,14 @@ def process_single_parse_file(input_file_path: str, parser_instance: GoogleAIStu
     intermediate_data = parser_instance.parse(input_file_path)
     if intermediate_data:
         file_name_without_ext = os.path.splitext(os.path.basename(input_file_path))[0]
-        prefix = output_prefix
-        if prefix.endswith(f"{file_name_without_ext}_") or prefix.endswith(f"{file_name_without_ext}"):
-            json_out_path = os.path.join(PROJECT_ROOT, f"{prefix}intermediate.json")
-            md_out_path = os.path.join(PROJECT_ROOT, f"{prefix}raw_rag.md")
-            human_md_out_path = os.path.join(PROJECT_ROOT, f"{prefix}human.md")
-        else:
-            json_out_path = os.path.join(PROJECT_ROOT, f"{prefix}{file_name_without_ext}_intermediate.json")
-            md_out_path = os.path.join(PROJECT_ROOT, f"{prefix}{file_name_without_ext}_raw_rag.md")
-            human_md_out_path = os.path.join(PROJECT_ROOT, f"{prefix}{file_name_without_ext}_human.md")
+        # Задача 001: вывод в отдельную подпапку на каждый входной файл;
+        # --output_prefix трактуется как базовая папка. Перезапись идемпотентна.
+        stem = safe_stem(file_name_without_ext)
+        out_dir = os.path.join(PROJECT_ROOT, output_prefix, stem)
+        os.makedirs(out_dir, exist_ok=True)
+        json_out_path = os.path.join(out_dir, f"{stem}_intermediate.json")
+        md_out_path = os.path.join(out_dir, f"{stem}_raw_rag.md")
+        human_md_out_path = os.path.join(out_dir, f"{stem}_human.md")
         try:
             os.makedirs(os.path.dirname(json_out_path), exist_ok=True)
             with open(json_out_path, 'w', encoding='utf-8') as f_json:
@@ -114,7 +118,7 @@ def process_single_parse_file(input_file_path: str, parser_instance: GoogleAIStu
         if getattr(parser_instance, 'log_to_memory', False):
             log_to_memory_compiler(human_markdown_content, "Google-Chat-Utils", f"Import: {file_name_without_ext}")
 
-        return True
+        return human_md_out_path
     else:
         print(f"  {RED}Не удалось распарсить файл: {input_file_path}{RESET}", file=sys.stderr)
         return False
@@ -160,32 +164,46 @@ def log_to_memory_compiler(content, project_name, section):
             os.remove(tmp_path)
 
 def handle_parse(args):
-    """Обработка команды 'parse' с новой структурой имён файлов."""
+    """Обработка команды 'parse': подпапка на каждый файл + опциональная дистилляция."""
     parser_gai = GoogleAIStudioJSONParser()
     parser_gai.log_to_memory = getattr(args, 'log_to_memory', False)
     output_prefix = args.output_prefix if args.output_prefix else "output_data/"
+
+    if getattr(args, 'distill', False) and (not args.llm_base_url or not args.llm_model):
+        print(f"{RED}Ошибка: --distill требует явных --llm_base_url и --llm_model (без дефолтов и автодетекта).{RESET}", file=sys.stderr)
+        sys.exit(2)
+
+    input_files = []
     if args.input_file:
-        process_single_parse_file(args.input_file, parser_gai, output_prefix)
+        input_files = [args.input_file]
     elif args.input_dir:
         if not os.path.isdir(args.input_dir):
             print(f"Ошибка: Входная директория не найдена: {args.input_dir}", file=sys.stderr)
-            return
+            sys.exit(2)
         print(f"Обработка всех JSON-совместимых файлов в директории: {args.input_dir}...")
-        processed_count = 0
-        successful_parses = 0
         for filename in os.listdir(args.input_dir):
             if filename.lower().endswith(('.json', '.jsonl', '.txt')) or '.' not in filename:
                 file_path = os.path.join(args.input_dir, filename)
                 if os.path.isfile(file_path):
-                    if process_single_parse_file(file_path, parser_gai, output_prefix):
-                        successful_parses += 1
-                    processed_count += 1
+                    input_files.append(file_path)
             else:
                 print(f"  Пропуск не-JSON файла: {filename}")
-        print(f"\\nОбработано {processed_count} потенциальных файлов из {args.input_dir}.")
-        print(f"Успешно распарсено и сохранено {successful_parses} файлов.")
     else:
         print("Ошибка: Необходимо указать --input_file или --input_dir для команды parse.", file=sys.stderr)
+        sys.exit(2)
+
+    human_md_files = []
+    successful_parses = 0
+    for file_path in input_files:
+        result_path = process_single_parse_file(file_path, parser_gai, output_prefix)
+        if result_path:
+            successful_parses += 1
+            human_md_files.append(result_path)
+    print(f"Успешно распарсено и сохранено {successful_parses} файлов.")
+
+    # Дистилляция уже готовых _human.md общим батчем (одна сводка, одно подтверждение)
+    if getattr(args, 'distill', False) and human_md_files:
+        run_distill_batch(human_md_files, args)
 
 
 def handle_reconstruct(args):
@@ -284,6 +302,128 @@ def handle_log(args):
     except Exception as e:
         print(f"{RED}❌ Ошибка при чтении файла {input_file}: {e}{RESET}", file=sys.stderr)
 
+def _add_distill_options(p):
+    """Общие флаги дистилляции для команд 'parse' и 'distill'."""
+    p.add_argument("--distill_dry_run", action="store_true",
+                   help="Только план (ходы/чанки/оценка токенов), без вызова LLM.")
+    p.add_argument("--yes", action="store_true",
+                   help="Пропустить подтверждение перед вызовом LLM.")
+    p.add_argument("--llm_base_url", default="",
+                   help="Base URL OpenAI-совместимого API. Обязателен при дистилляции, дефолтов нет.")
+    p.add_argument("--llm_model", default="",
+                   help="Имя модели. Обязательно при дистилляции, дефолтов нет.")
+    p.add_argument("--llm_api_key_env", default="DISTILL_API_KEY",
+                   help="Имя переменной окружения с ключом (по умолчанию DISTILL_API_KEY).")
+    p.add_argument("--distill_prompt_dir", default="prompts",
+                   help="Папка с промптами дистиллятора (по умолчанию prompts/).")
+    p.add_argument("--chunk_tokens", type=int, default=30000,
+                   help="Целевой размер чанка в токенах (оценка). По умолчанию 30000.")
+    p.add_argument("--max_total_input_tokens", type=int, default=400000,
+                   help="Жёсткий лимит суммарной оценки входа. По умолчанию 400000.")
+    p.add_argument("--distill_max_chunks", type=int, default=None,
+                   help="Ограничить число чанков на файл (для пробных прогонов).")
+    p.add_argument("--distill_thoughts", choices=["drop", "keep"], default="drop",
+                   help="Что делать с Model Thoughts (по умолчанию drop).")
+
+
+def build_distill_config(args, output_dir=None):
+    """Собрать DistillConfig из аргументов CLI."""
+    cfg = distill_pipeline.DistillConfig()
+    cfg.llm_base_url = args.llm_base_url
+    cfg.llm_model = args.llm_model
+    cfg.llm_api_key_env = args.llm_api_key_env
+    cfg.prompt_dir = args.distill_prompt_dir
+    cfg.chunk_tokens = args.chunk_tokens
+    cfg.max_total_input_tokens = args.max_total_input_tokens
+    cfg.max_chunks = args.distill_max_chunks
+    cfg.distill_thoughts = args.distill_thoughts
+    cfg.dry_run = args.distill_dry_run
+    cfg.assume_yes = args.yes
+    cfg.output_dir = output_dir
+    return cfg
+
+
+def run_distill_batch(human_files, args, output_dir=None):
+    """Общий flow дистилляции (задача 001): план → подтверждение → последовательные вызовы.
+
+    Используется и из 'parse --distill', и из команды 'distill' — общая точка
+    входа в пайплайн: distill_pipeline.distill_human_markdown(path, cfg).
+    """
+    cfg = build_distill_config(args, output_dir)
+
+    preps = []
+    for path in human_files:
+        try:
+            distill_pipeline.validate_turn_headers(path)
+            preps.append((path, distill_pipeline.prepare(path, cfg)))
+        except distill_pipeline.DistillError as e:
+            print(f"{RED}Ошибка: {e}{RESET}", file=sys.stderr)
+            sys.exit(e.exit_code)
+
+    print(f"{BOLD}План дистилляции:{RESET}")
+    total_tokens = 0
+    for path, prep in preps:
+        print(distill_pipeline.plan_line(path, prep))
+        if prep.redaction_counts:
+            print(f"    редакция секретов: {prep.redaction_counts}")
+        total_tokens += prep.estimated_input_tokens
+    print(f"Итого: файлов={len(preps)}, ~вход={total_tokens} токенов")
+
+    if total_tokens > cfg.max_total_input_tokens:
+        print(f"{RED}Отказ: оценка входа {total_tokens} > лимита {cfg.max_total_input_tokens}.{RESET}", file=sys.stderr)
+        sys.exit(2)
+
+    if cfg.dry_run:
+        print(f"{YELLOW}[dry-run] Вызовы LLM пропущены.{RESET}")
+        return
+
+    if not cfg.assume_yes:
+        answer = input("Запустить дистилляцию? [y/N] ")
+        if answer.strip().lower() not in ("y", "yes", "да"):
+            print("Отменено.")
+            return
+
+    for path, _ in preps:
+        try:
+            distill_pipeline.distill_human_markdown(path, cfg)
+        except distill_pipeline.DistillError as e:
+            print(f"{RED}Ошибка дистилляции {os.path.basename(path)}: {e}{RESET}", file=sys.stderr)
+            sys.exit(e.exit_code)
+
+
+def handle_distill(args):
+    """Команда 'distill': дистилляция готовых _human.md без повторного парсинга."""
+    if not args.llm_base_url or not args.llm_model:
+        print(f"{RED}Ошибка: команда distill требует явных --llm_base_url и --llm_model (без дефолтов).{RESET}", file=sys.stderr)
+        sys.exit(2)
+
+    human_files = []
+    if args.input_file:
+        if not os.path.isfile(args.input_file):
+            print(f"{RED}Ошибка: Файл не найден: {args.input_file}{RESET}", file=sys.stderr)
+            sys.exit(2)
+        human_files = [args.input_file]
+    elif args.input_dir:
+        if not os.path.isdir(args.input_dir):
+            print(f"{RED}Ошибка: Директория не найдена: {args.input_dir}{RESET}", file=sys.stderr)
+            sys.exit(2)
+        # Только *_human.md, без рекурсии
+        for filename in sorted(os.listdir(args.input_dir)):
+            if filename.endswith("_human.md"):
+                full = os.path.join(args.input_dir, filename)
+                if os.path.isfile(full):
+                    human_files.append(full)
+        if not human_files:
+            print(f"{YELLOW}В {args.input_dir} нет файлов *_human.md.{RESET}")
+            return
+    else:
+        print("Ошибка: Необходимо указать --input_file или --input_dir для команды distill.", file=sys.stderr)
+        sys.exit(2)
+
+    print(f"{BOLD}{BLUE}🚀 Запуск команды [distill] 🚀{RESET}")
+    run_distill_batch(human_files, args, output_dir=args.output_dir)
+
+
 def main():
     """Main function for the CLI."""
     parser = argparse.ArgumentParser(
@@ -303,9 +443,12 @@ def main():
     input_group.add_argument("--input_dir", "-d", metavar="DIR_PATH",
                              help="Directory containing input JSON files (from Google AI Studio).")
     parse_parser.add_argument("--output_prefix", "-o", metavar="OUTPUT_PREFIX", default="output_data/",
-                              help="Префикс для имён выходных файлов. Например: output_data/. По умолчанию: output_data/")
+                              help="Базовая папка вывода: каждый входной файл получает подпапку <имя>/. По умолчанию: output_data/")
     parse_parser.add_argument("--log_to_memory", "-l", action="store_true",
                               help="Добавить результат обработки (human.md) в дневной лог Memory Compiler.")
+    parse_parser.add_argument("--distill", action="store_true",
+                              help="После парсинга дистиллировать _human.md через LLM (требует --llm_base_url и --llm_model).")
+    _add_distill_options(parse_parser)
     parse_parser.set_defaults(func=handle_parse)
 
     # --- Parser for the 'reconstruct' command ---
@@ -351,6 +494,21 @@ def main():
     log_parser.add_argument("--section", "-s", metavar="SECTION_NAME",
                             help="Title for the section in the daily log. Default: Manual Log: <filename>")
     log_parser.set_defaults(func=handle_log)
+
+    # --- Parser for the 'distill' command ---
+    distill_parser = subparsers.add_parser("distill",
+        help="Distill existing _human.md files via LLM (no re-parsing).",
+        description="Дистилляция готовых _human.md: редакция секретов, чанкинг, вызовы LLM, верификация. Выход: <stem>_distilled.md рядом со входным файлом (или в --output_dir). Существующие _distilled.md не перезаписываются."
+    )
+    distill_input_group = distill_parser.add_mutually_exclusive_group(required=True)
+    distill_input_group.add_argument("--input_file", "-i", metavar="FILE_PATH",
+                                     help="Путь к одному _human.md файлу.")
+    distill_input_group.add_argument("--input_dir", "-d", metavar="DIR_PATH",
+                                     help="Директория с _human.md файлами (без рекурсии, только *_human.md).")
+    distill_parser.add_argument("--output_dir", metavar="DIR_PATH", default=None,
+                                help="Папка для _distilled.md и кэша. По умолчанию: рядом со входным файлом.")
+    _add_distill_options(distill_parser)
+    distill_parser.set_defaults(func=handle_distill)
 
     if len(sys.argv) == 1: # If no command is provided, print help and exit
         parser.print_help(sys.stderr)

@@ -40,10 +40,17 @@ generated: {by: claude, at: 2026-09-30}
 - Отдельно: `client.interactions.create(...)` ("Get code"/экспорт в буфер из Studio) — не тот же артефакт, что файл на Drive; не содержит истории чанками, для парсинга бесполезен. Тот же эндпоинт фигурирует в [[antigravity-interactions-api-500-incident]] (HTTP 500/524, другая модель) — не тот же кейс, но канал с историей нестабильности.
 - Секреты в репозитории (см. раздел выше) — статус не изменился, всё ещё не ротировано, всё ещё вне скоупа `001`.
 
+## Задача 001 — статус: реализация завершена (2026-09-30)
+- Код: `utils/distillation/` (safe_stem, chunker, redactor, llm_client, verifier, pipeline), обновлён `utils/cli_v3.py` (подпапки, `--distill`, команда `distill`).
+- Тесты: 73 passed (ruff clean). Предсуществующие поломки в `test_parsing.py`, `test_reconstruction.py`, `test_studio_json_reconstruction.py` — не чинились (вне скоупа).
+- Сухой прогон на Hermes: ходов=169, чанков=12, ~вход=261 783 ток., ~выход=52 356 ток. Редакция: sk_key=26, bearer=2.
+- Отчёт: `.agents/reports/001-distill-pipeline.md`.
+- Текст тикета `.agents/tasks/001-distill-pipeline.md` обновлён под все финальные решения; статус `done-pending-llm-credentials`.
+- Реальный вызов LLM заблокирован: владелец ещё не дал `--llm_base_url` / `--llm_model`.
+
 ## Открытый бэклог
 - Ротация ключей + чистка истории + .gitignore для input_data/output_data (решение владельца).
 - Выбор бэкенда/модели для дистиллятора (параметры `--llm_base_url/--llm_model`) — всё ещё не дан; без него реальный (не dry-run) прогон запрещён.
 - Дефолт `--distill_thoughts drop` — подтвердить.
-- Обновить текст `.agents/tasks/001-distill-pipeline.md` под пять финальных решений выше (сейчас файл ещё отражает старые: chars/2.5, suffix-коллизии, requests, `#` оставлять, кэш без base_url).
 - Судьба существующих плоских файлов в `output_data/`; `.agents/AGENTS.md` не создавался.
 - Фича "получить чат с Drive по имени" — оформлена тикетом `.agents/tasks/002-drive-auth-security-docs.md` для Jules (Drive OAuth + аудит безопасности всего кода + синхронизация документации); статус `open`, работает в отдельной ветке `feature/drive-auth-security-002`, PR не мержить самостоятельно. Способ авторизации (OAuth user-flow vs service account) помечен в тикете как ⚠️ не проверено — Jules должен подтвердить эмпирически.
