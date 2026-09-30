@@ -5,7 +5,7 @@ trust_tier: ai-verified-against-repo
 project: google-chat-utils
 repo: avkus-labs/google-chat-utils
 branch: main
-last_verified_head: d753e0a
+last_verified_head: e4b2c87
 generated: {by: claude, at: 2026-09-30}
 ---
 
@@ -46,4 +46,4 @@ generated: {by: claude, at: 2026-09-30}
 - Дефолт `--distill_thoughts drop` — подтвердить.
 - Обновить текст `.agents/tasks/001-distill-pipeline.md` под пять финальных решений выше (сейчас файл ещё отражает старые: chars/2.5, suffix-коллизии, requests, `#` оставлять, кэш без base_url).
 - Судьба существующих плоских файлов в `output_data/`; `.agents/AGENTS.md` не создавался.
-- Фича "получить чат с Drive по имени" — только в ROADMAP, без тикета; понадобится решение по способу авторизации (OAuth user-flow vs service account) и хранению refresh-токена.
+- Фича "получить чат с Drive по имени" — оформлена тикетом `.agents/tasks/002-drive-auth-security-docs.md` для Jules (Drive OAuth + аудит безопасности всего кода + синхронизация документации); статус `open`, работает в отдельной ветке `feature/drive-auth-security-002`, PR не мержить самостоятельно. Способ авторизации (OAuth user-flow vs service account) помечен в тикете как ⚠️ не проверено — Jules должен подтвердить эмпирически.
