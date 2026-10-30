@@ -5,7 +5,7 @@ trust_tier: ai-verified-against-repo
 project: google-chat-utils
 repo: avkus-labs/google-chat-utils
 branch: main
-last_verified_head: f880d3f
+last_verified_head: 19446b2
 generated: {by: claude, at: 2026-10-30}
 ---
 
@@ -14,7 +14,7 @@ generated: {by: claude, at: 2026-10-30}
 Предыдущий снепшот (2026-09-30, подробная история ветвей, PR-вопроса и решений по 001) сохранён: `.agents/states/session-2026-09-30-distill-001.md` (archived).
 
 ## Ветки
-- Только `main` (локально и `origin/main`), HEAD на момент сверки — `f880d3f`. PR не обязателен: на free-плане private-репо branch protection недоступна (из снепшота 2026-09-30).
+- Только `main`; HEAD на момент сверки — `19446b2` (v0.7.0: логирование, Pydantic-валидация, интерактивный режим; отчёт исполнителя прочитан, код не аудитирован; 99 тестов passed, `test_drive_fetch.py` не собрался в моей песочнице — нет `googleapiclient`). PR не обязателен: на free-плане private-репо branch protection недоступна (из снепшота 2026-09-30).
 
 ## Что сверено по коду (2026-10-30, против `f880d3f`)
 - `utils/distillation/` = `chunker`, `redactor`, `llm_client`, `verifier`, `pipeline`, `safe_stem`; точка входа `distill_human_markdown(path, cfg)`.
@@ -33,8 +33,8 @@ generated: {by: claude, at: 2026-10-30}
 - ⚠️ Не проверено: реальный прогон с LLM (нет `--llm_base_url/--llm_model`); прогон `ingest` → `enrich` → `lint` OmniWiki на `_distilled.md` (вывод о pre-processed сделан чтением кода); поведение новых промптов на живой модели.
 
 ## Расхождения и открытое
-- ⚠️ `pipeline.py` бросает `DistillError`, если `_distilled.md` уже существует; решение владельца от 2026-09-30 — «перезапись по умолчанию, суффикс `-2/-3` только под `--no-overwrite`»; флага `--no-overwrite` в `cli_v3.py` и `utils/distillation/` не найдено. Нужно решить, чья версия верна.
+- Перезапись: `parse` перезаписывает по умолчанию (это и было решение 2026-09-30); для `_distilled.md` pipeline намеренно отказывает (тест `test_pipeline.py:~117`). Решение 2026-10-30: по умолчанию пропуск готовых + флаг `--distill_overwrite` — тикет `.agents/tasks/003-distill-overwrite-flag.md` (Antigravity, ветка `feature/distill-overwrite-003`, статус open).
 - Не проверено в этой сессии: состояние Drive-фичи (коммит `f880d3f` «integrate Google Drive into CLI», бывший тикет 002), `ruff clean`/`test_parsing.py`, `test_reconstruction.py`, `test_studio_json_reconstruction.py` (в прошлом снепшоте числились предсуществующими поломками).
-- 🔴 `input_data/` и `output_data/` по-прежнему отслеживаются git, в `.gitignore` их нет; в них рабочие на вид API-ключи и Linear-токен (подробности в архивном снепшоте, маски там же). Ротация и чистка истории (filter-repo) — решение владельца, статус ротации неизвестен.
+- Секреты в `input_data/`/`output_data/` (см. архивный снепшот): владелец решил не заниматься, тему не поднимать.
 - Верификатор: не проверяет номера ходов вне диапазона и сравнивает код-блоки только целиком.
 - Дефолт `--distill_thoughts drop` — подтвердить; судьба плоских файлов в `output_data/`; `.agents/AGENTS.md` не создавался.
