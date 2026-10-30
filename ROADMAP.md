@@ -9,9 +9,9 @@
 - [x] **Команда `distill`:** Дистилляция готовых `_human.md` через LLM с чанкингом, кэшированием и верификацией. *(задача 001, v0.5.0)*
 - [x] **Интеграция с Memory Compiler:** Автоматическая отправка логов (`--log_to_memory`) и подкоманда `log`. *(v0.4.0)*
 - [x] **Интеграция Google Drive в CLI:** Добавлены подкоманды `fetch-drive` и `auth-drive` в `utils/cli_v3.py`. *(v0.6.0)*
-- [ ] **Расширение CLI:** Добавление интерактивного режима (`interactive mode`) для пошагового выполнения операций парсинга и реконструкции.
-- [ ] **Валидация данных:** Внедрение Pydantic-схем для строгой валидации входящих JSON-экспортов из Google AI Studio на ранних этапах.
-- [ ] **Улучшение логгирования:** Добавление структурированного логгирования (модуль `logging`) и детальных debug-логов исполнения команд в CLI.
+- [x] **Расширение CLI:** Добавление интерактивного режима (`interactive mode`) для пошагового выполнения операций парсинга, валидации и реконструкции. *(v0.7.0)*
+- [x] **Валидация данных:** Внедрение Pydantic-схем для строгой валидации входящих JSON-экспортов из Google AI Studio и промежуточных файлов (`utils/validation/export_validator.py`, команда `validate`). *(v0.7.0)*
+- [x] **Улучшение логгирования:** Структурированное логирование (модуль `logging`, `utils/logging_config.py`), флаги `--verbose`, `--log-level`, `--log-file`, устранение deprecation warning `datetime.utcnow()`. *(v0.7.0)*
 
 ### 2. Функциональность (Парсинг, Дистилляция, Реконструкция)
 - [x] **Модули работы с Google Drive:** Созданы `utils/drive/auth.py` (OAuth2 user-flow, refresh-токен) и `utils/drive/client.py` (`GoogleDriveChatFetcher` — поиск по имени в папке "Google AI Studio", скачивание raw JSON). *(задача 002)*
@@ -36,6 +36,7 @@
 - [x] **CI/CD:** Настроен GitHub Actions Workflow (`.github/workflows/ci.yml`) с матрицей Python 3.10-3.12, проверкой линтером ruff и запуском pytest. *(v0.6.0)*
 
 ## 📈 История версий (см. CHANGELOG.md)
+- [0.7.0] — Интерактивный режим CLI (`interactive`), Pydantic-валидация JSON-экспортов (`validate`), структурированное логирование (`logging`), исправление deprecation warning `datetime.utcnow()`.
 - [0.6.0] — Полноценная интеграция Google Drive (`fetch-drive`, `auth-drive`), сквозной пайплайн, тесты трансформера, фиксы тестов и CI/CD GitHub Actions.
 - [0.5.0] — Подпапки вывода, команда `distill`, LLM-дистилляция, редакция секретов, верификатор.
 - [0.4.0] — Интеграция с Memory Compiler (`--log_to_memory`, команда `log`).

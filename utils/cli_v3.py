@@ -21,7 +21,7 @@ MAGENTA = "\033[95m"
 
 SEPARATOR = f"{CYAN}{'-'*56}{RESET}"
 
-print('START CLI')
+
 try:
     from utils.parsing.google_studio_parser import GoogleAIStudioJSONParser
     from utils.reconstruction.gemini_code_reconstructor import GeminiAPICodeReconstructor
@@ -475,12 +475,54 @@ def handle_fetch_drive(args):
         sys.exit(1)
 
 
+def handle_validate(args):
+    """Команда 'validate': проверка структуры JSON через Pydantic схему."""
+    from utils.validation import validate_json_file
+    print(f"{BOLD}{BLUE}🚀 Запуск команды [validate] 🚀{RESET}")
+    print(SEPARATOR)
+    print(f"{BOLD}📄 Проверяемый файл:{RESET} {os.path.normpath(args.input_file)}")
+    print(SEPARATOR)
+
+    result = validate_json_file(args.input_file)
+    if result.is_valid:
+        print(f"{GREEN}✅ Файл успешно прошёл валидацию!{RESET}")
+        print(f"  Формат: {BOLD}{result.format_type}{RESET}")
+        if result.warnings:
+            for w in result.warnings:
+                print(f"  {YELLOW}⚠️  Предупреждение: {w}{RESET}")
+    else:
+        print(f"{RED}❌ Ошибка валидации!{RESET}")
+        print(f"  Определённый формат: {BOLD}{result.format_type}{RESET}")
+        for err in result.errors:
+            print(f"  {RED}- {err}{RESET}", file=sys.stderr)
+        sys.exit(1)
+
+
+def handle_interactive(args=None):
+    """Команда 'interactive': запуск интерактивного меню."""
+    from utils.interactive import run_interactive_menu
+    handlers = {
+        "parse": handle_parse,
+        "reconstruct": handle_reconstruct,
+        "apply_overrides_to_studio_json": handle_apply_overrides,
+        "validate": handle_validate,
+        "distill": handle_distill,
+        "fetch-drive": handle_fetch_drive,
+        "auth-drive": handle_auth_drive,
+        "log": handle_log,
+    }
+    run_interactive_menu(handlers)
+
+
 def main():
     """Main function for the CLI."""
     parser = argparse.ArgumentParser(
         description="Google Chat Utils v3 CLI: Parse AI Studio exports and reconstruct Gemini API code.",
         formatter_class=argparse.RawTextHelpFormatter
     )
+    parser.add_argument("-v", "--verbose", action="store_true", help="Включить подробный отладочный вывод (DEBUG).")
+    parser.add_argument("--log-level", choices=["DEBUG", "INFO", "WARNING", "ERROR"], default="INFO", help="Уровень логирования (по умолчанию: INFO).")
+    parser.add_argument("--log-file", help="Файл для сохранения логов.")
     subparsers = parser.add_subparsers(dest="command", help="Available commands. Use <command> --help for more details.", required=True)
 
     # --- Parser for the 'parse' command ---
@@ -594,11 +636,36 @@ def main():
     _add_distill_options(fetch_drive_parser)
     fetch_drive_parser.set_defaults(func=handle_fetch_drive)
 
+    # --- Parser for the 'validate' command ---
+    validate_parser = subparsers.add_parser("validate",
+        help="Validate JSON export file using Pydantic schemas.",
+        description="Проверяет валидность JSON-экспорта Google AI Studio или промежуточного файла."
+    )
+    validate_parser.add_argument("--input_file", "-i", required=True,
+                                 help="Путь к JSON файлу для проверки.")
+    validate_parser.set_defaults(func=handle_validate)
+
+    # --- Parser for the 'interactive' command ---
+    interactive_parser = subparsers.add_parser("interactive",
+        help="Start interactive terminal menu.",
+        description="Запускает пошаговое интерактивное текстовое меню."
+    )
+    interactive_parser.set_defaults(func=handle_interactive)
+
     if len(sys.argv) == 1:
+        if sys.stdin.isatty():
+            handle_interactive()
+            return
         parser.print_help(sys.stderr)
         sys.exit(1)
 
     args = parser.parse_args()
+    from utils.logging_config import setup_logging
+    setup_logging(
+        level=getattr(args, "log_level", "INFO"),
+        log_file=getattr(args, "log_file", None),
+        verbose=getattr(args, "verbose", False)
+    )
     args.func(args)
 
 if __name__ == "__main__":

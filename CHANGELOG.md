@@ -6,6 +6,33 @@
 
 ---
 
+## [0.7.0] - 2026-10-31
+
+### Added (Добавлено)
+- **Интерактивный режим CLI (`utils/interactive.py`, подкоманда `interactive`):**
+  - Пошаговое меню в терминале для запуска парсинга, реконструкции, валидации, дистилляции, оверрайдов и интеграции с Google Drive.
+  - Автоматический запуск интерактивного режима при вызове `cli_v3.py` без параметров в интерактивном TTY.
+- **Pydantic-валидация JSON-экспортов (`utils/validation/`):**
+  - Модели `GoogleStudioExportModel`, `StudioRunSettingsModel`, `StudioChunkModel`, `IntermediateChatDataModel` на Pydantic v2.
+  - Функция `validate_studio_export()` и `validate_json_file()` с детальным отчётом о валидности, типе формата, ошибках и предупреждениях.
+  - Новая подкоманда CLI: `python utils/cli_v3.py validate -i <file.json>`.
+  - Автоматическая валидация входящих данных в `GoogleAIStudioJSONParser.parse(..., validate=True)`.
+- **Структурированное логирование (`utils/logging_config.py`):**
+  - Централизованная настройка логирования (`setup_logging`, `get_logger`).
+  - Флаги CLI: `-v` / `--verbose`, `--log-level` (`DEBUG`, `INFO`, `WARNING`, `ERROR`), `--log-file`.
+  - Удалены устаревшие/шумные debug `print`-вызовы в парсере, реконструкторе и CLI, заменены на `logger.debug` / `logger.info` / `logger.error`.
+- **Набор тестов:**
+  - `tests/test_validation.py` (7 тестов валидации Pydantic).
+  - `tests/test_interactive.py` (6 тестов интерактивного меню и промптов).
+  - `tests/test_logging.py` (4 теста логирования).
+  - Общее число тестов проекта выросло до 101.
+
+### Fixed (Исправлено)
+- **Устранение DeprecationWarning:** Заменён устаревший метод `datetime.datetime.utcnow()` на `datetime.datetime.now(datetime.timezone.utc)` в парсере и реконструкторе (0 предупреждений в pytest).
+- **Ошибка передачи параметров в `handle_reconstruct`:** Удалён лишний аргумент `model_name` из прямого вызова `reconstructor.reconstruct()`.
+
+---
+
 ## [0.6.0] - 2026-10-31
 
 ### Added (Добавлено)

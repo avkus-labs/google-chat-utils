@@ -39,6 +39,18 @@ ruff check utils/ tests/
 
 All commands can be run directly from the repository root:
 
+- **Interactive Terminal UI:**
+  ```bash
+  python utils/cli_v3.py interactive
+  # Or run without arguments in terminal
+  python utils/cli_v3.py
+  ```
+
+- **Validate JSON Exports (Pydantic):**
+  ```bash
+  python utils/cli_v3.py validate --input_file data/Example
+  ```
+
 - **Parse Google AI Studio Chat Exports:**
   ```bash
   # Parse single file (generates intermediate.json, raw_rag.md, human.md in output_prefix/<stem>/)
@@ -135,6 +147,15 @@ The repository parses Google AI Studio chat session exports, converts them into 
 
 - **`utils/transformation/` (Schema Conversion):**
   - `schema_transformer.py`: Standalone CLI & converter between OpenAI JSON Schema, Gemini SchemaData, and Python `google.genai.types.Schema` code.
+
+- **`utils/validation/` (Pydantic Schema Validation):**
+  - `export_validator.py`: Pydantic v2 schemas (`GoogleStudioExportModel`, `IntermediateChatDataModel`, `StudioRunSettingsModel`) and validation helpers (`validate_studio_export`, `validate_json_file`).
+
+- **`utils/logging_config.py` (Structured Logging):**
+  - Project-wide logging configuration with customizable log levels, formatting, and file output support.
+
+- **`utils/interactive.py` (Interactive Terminal Menu):**
+  - Interactive CLI UI for guiding users through parsing, reconstructing, validating, and fetching chats.
 
 - **`utils/cli_v3.py` (Unified CLI):**
   - Orchestrates parser, reconstructor, Studio JSON modifier, distillation, and logging subcommands. Handles path normalization across Windows and Linux.

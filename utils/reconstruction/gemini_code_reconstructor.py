@@ -14,6 +14,9 @@ from utils.core.schema_elements import SchemaData, FunctionDefinition
 
 # SchemaTransformer for converting SchemaData to genai.types.Schema Python code
 from utils.transformation.schema_transformer import SchemaTransformer
+from utils.logging_config import get_logger
+
+logger = get_logger("reconstructor")
 
 # Constants adapted from reconstructor_v2.py
 PYTHON_EXEC_LANG_MAP = {
@@ -154,13 +157,13 @@ class GeminiAPICodeReconstructor:
                     template_name: str,
                     api_key_var_name: str = "YOUR_API_KEY"
                    ) -> str:
-        print('START RECONSTRUCT')
-        print('DEBUG: dialogue_history:')
+        logger.debug("Starting reconstruct for template: %s", template_name)
+        logger.debug("Dialogue history: %d turns, tool configs: %d", len(intermediate_data.dialogue_history), len(intermediate_data.tool_configurations))
         for i, turn in enumerate(intermediate_data.dialogue_history):
-            print(f'  Turn {i}: role={turn.role}, parts={[getattr(p, "content", str(p)) for p in turn.parts]}')
-        print('DEBUG: tool_configurations:')
+            logger.debug("  Turn %d: role=%s, parts count=%d", i, turn.role, len(turn.parts))
+
         for tool in intermediate_data.tool_configurations:
-            print(f'  Tool type={tool.type}, functions={getattr(tool, "functions", None)}')
+            logger.debug("  Tool type=%s, functions count=%d", tool.type, len(getattr(tool, "functions", []) or []))
         template_path = os.path.join(self.template_dir, template_name)
         if not os.path.isfile(template_path):
             return f"# Error: Template file not found at {template_path}"
@@ -274,7 +277,7 @@ if generation_config != "None":
 
     intermediate_data_sample = IntermediateChatData(
         source_file_name="full_test.json",
-        parsed_at_timestamp=datetime.datetime.utcnow().isoformat() + "Z",
+        parsed_at_timestamp=datetime.datetime.now(datetime.timezone.utc).isoformat().replace("+00:00", "Z"),
         run_settings=sample_rs_data,
         system_instruction=sample_sys_instruction,
         dialogue_history=sample_dialogue,

@@ -4,6 +4,7 @@ import os
 from typing import List, Dict, Any, Optional, Union
 
 # Import necessary classes from core modules
+from utils.logging_config import get_logger
 from utils.core.schema_elements import SchemaData, FunctionDefinition
 from utils.core.chat_elements import (
     RunSettingsData, SystemInstruction, ChatMessagePart, TextPart, ThoughtsPart, # Basic parts for now
@@ -12,6 +13,8 @@ from utils.core.chat_elements import (
 )
 # SchemaTransformer might be needed if we decide to convert OpenAI-like schemas from export to SchemaData
 # from utils.transformation.schema_transformer import SchemaTransformer
+
+logger = get_logger("parser")
 
 
 def load_json_file(file_path: str) -> Optional[Dict[str, Any]]:
@@ -25,10 +28,10 @@ def load_json_file(file_path: str) -> Optional[Dict[str, Any]]:
             data = json.load(f)
         return data
     except FileNotFoundError:
-        # print(f"Error: File not found at {file_path}") # Consider logging instead of printing
+        logger.error("File not found at %s", file_path)
         return None
     except json.JSONDecodeError:
-        # print(f"Error: Could not decode JSON from file {file_path}")
+        logger.error("Could not decode JSON from file %s", file_path)
         return None
     except Exception:
         # print(f"An unexpected error occurred while loading {file_path}: {e}")
@@ -173,7 +176,7 @@ class GoogleAIStudioJSONParser:
             configs.append(ToolConfiguration(type="google_search_enabled"))
         if getattr(run_settings, 'enable_browse_as_tool', False) is True:
             configs.append(ToolConfiguration(type="browse_enabled"))
-        print(f'DEBUG _parse_tool_configuration: {configs}')
+        logger.debug("Parsed tool configuration: %s", configs)
         return configs
 
     def _parse_chat_message_part(self, part_data: Dict[str, Any], owner_role: str = "unknown", is_thought_chunk: bool = False) -> Optional[ChatMessagePart]:
@@ -388,7 +391,7 @@ class GoogleAIStudioJSONParser:
                     processed_history.append(DialogueTurn(role=role or "unknown", parts=current_chunk_extracted_parts, turn_id=turn_counter))
 
         finalize_model_turn() # Finalize any last pending model turn
-        print(f'DEBUG _parse_dialogue_history: {processed_history}')
+        logger.debug("Parsed dialogue history: %d turns", len(processed_history))
 
         # Присваиваем turn_id всем ходам, если не был установлен
         for idx, turn in enumerate(processed_history, 1):
@@ -592,7 +595,7 @@ class GoogleAIStudioJSONParser:
         return "\n".join(markdown_parts)
 
     # --- Main parse method ---
-    def parse(self, file_path_or_data: Union[str, Dict[str, Any]]) -> Optional[IntermediateChatData]:
+    def parse(self, file_path_or_data: Union[str, Dict[str, Any]], validate: bool = True) -> Optional[IntermediateChatData]:
         """
         Parses a Google AI Studio JSON file or loaded dictionary into an IntermediateChatData object.
         """
@@ -609,12 +612,20 @@ class GoogleAIStudioJSONParser:
         else:
             return None
 
+        if validate:
+            from utils.validation.export_validator import validate_studio_export
+            val_res = validate_studio_export(raw_data)
+            if not val_res.is_valid:
+                logger.warning("Валидация входящего JSON выявила проблемы: %s", "; ".join(val_res.errors))
+            for w in val_res.warnings:
+                logger.warning("Предупреждение валидации: %s", w)
+
         # Если это промежуточный JSON — используем from_dict
         if 'dialogue_history' in raw_data and 'tool_configurations' in raw_data:
             try:
                 return IntermediateChatData.from_dict(raw_data)
             except Exception as e:
-                print(f"[parse] Ошибка десериализации промежуточного JSON: {e}")
+                logger.error("Ошибка десериализации промежуточного JSON: %s", e)
                 return None
 
         # Core parsing steps для сырого экспорта Studio
@@ -622,7 +633,7 @@ class GoogleAIStudioJSONParser:
         system_instruction = self._parse_system_instruction(raw_data)
         tool_configurations = self._parse_tool_configuration(run_settings)
         dialogue_history = self._parse_dialogue_history(raw_data)
-        parsed_at_ts = datetime.datetime.utcnow().isoformat() + "Z"
+        parsed_at_ts = datetime.datetime.now(datetime.timezone.utc).isoformat().replace("+00:00", "Z")
         intermediate_data = IntermediateChatData(
             source_file_name=source_file_name,
             parsed_at_timestamp=parsed_at_ts,
