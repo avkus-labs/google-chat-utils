@@ -126,3 +126,4 @@ python utils/cli_v3.py distill --input_dir output_data --distill_dry_run --llm_b
 ## 5. Что НЕ проверено
 
 - Реальные сетевые вызовы к внешнему LLM API (в соответствии с Cost Guard заданием 003 реальные вызовы LLM запрещены; всё взаимодействие проверено на моках).
+
