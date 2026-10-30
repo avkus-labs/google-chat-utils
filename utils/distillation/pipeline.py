@@ -160,8 +160,10 @@ def distill_human_markdown(input_path: str, cfg: DistillConfig) -> Optional[str]
 
     chunk_results: List[str] = []
     for i, chunk_text in enumerate(prep.chunks, 1):
-        prompt = chunk_tpl.replace("{chunk_index}", str(i)).replace(
-            "{chunk_total}", str(len(prep.chunks))) + "\n\n" + chunk_text
+        prompt = (chunk_tpl.replace("{chunk_index}", str(i)).replace(
+            "{chunk_total}", str(len(prep.chunks)))
+            + f'\n\n<fragment index="{i}" total="{len(prep.chunks)}">\n'
+            + chunk_text + "\n</fragment>")
         key = cache_key(chunk_text, chunk_tpl, cfg.llm_model, cfg.llm_base_url)
         cached = cache.get(key)
         if cached is not None:
@@ -180,7 +182,7 @@ def distill_human_markdown(input_path: str, cfg: DistillConfig) -> Optional[str]
         chunk_results.append(content)
 
     merged = "\n\n".join(chunk_results)
-    synth_prompt = synth_tpl + "\n\n" + merged
+    synth_prompt = synth_tpl + "\n\n<distilled_text>\n" + merged + "\n</distilled_text>"
     synth_key = cache_key(merged, synth_tpl, cfg.llm_model, cfg.llm_base_url)
     meta_json = cache.get(synth_key)
     if meta_json is None:
@@ -254,9 +256,14 @@ def _load_prompt(prompt_dir: str, name: str) -> str:
         return f.read()
 
 
+def _utc_now() -> str:
+    """Full ISO 8601 with explicit UTC offset (OKF v0.2 rejects bare dates)."""
+    return datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")
+
+
 def _frontmatter_only(meta, input_path, prep, cfg) -> str:
     """Frontmatter string (used for early verification of the header)."""
-    now = datetime.date.today().isoformat()
+    now = _utc_now()
     fm = {
         "type": "source",
         "title": meta.get("title", os.path.basename(input_path)),
@@ -287,7 +294,7 @@ def _to_yaml(obj, indent: int = 0) -> str:
 
 
 def render_distilled(meta, body, verification, input_path, prep, cfg) -> str:
-    now = datetime.date.today().isoformat()
+    now = _utc_now()
     fm_lines = [
         "---",
         "type: source",
@@ -295,12 +302,13 @@ def render_distilled(meta, body, verification, input_path, prep, cfg) -> str:
         "status: active",
         "trust_tier: ai-generated",
         "generated:",
-        f"  by: {cfg.llm_model}",
-        f"  at: {now}",
+        f"  by: {json.dumps(cfg.llm_model, ensure_ascii=False)}",
+        f"  at: {json.dumps(now)}",
         f"original_source: {json.dumps(os.path.basename(input_path), ensure_ascii=False)}",
         f"source_sha256: {prep.source_hash}",
         f"chunks: {len(prep.chunks)}",
-        f"summary: {json.dumps(meta.get('summary', ''), ensure_ascii=False)}",
+        f"description: {json.dumps(meta.get('summary', ''), ensure_ascii=False)}",
+        f"resolution: {json.dumps(meta.get('resolution', ''), ensure_ascii=False)}",
         "keywords:",
     ]
     for k in meta.get("keywords", []):
@@ -318,6 +326,8 @@ def render_distilled(meta, body, verification, input_path, prep, cfg) -> str:
                 body, "",
                 "## Ключевая информация", ""]
     sections += _kv_section("Решения", meta.get("decisions_made", []))
+    sections += _kv_section("Неудачные подходы", meta.get("failed_approaches", []))
+    sections += _kv_section("Сигнатуры ошибок", meta.get("error_signatures", []))
     sections += _kv_section("Уроки", meta.get("lessons_learned", []))
     sections += _kv_section("Темы", meta.get("topics_covered", []))
     sections += _kv_section("Открытые вопросы", meta.get("open_questions", []))
