@@ -1,4 +1,4 @@
-# 🚀 google-chat-utils v0.7.0: Интерактивный режим, Pydantic-валидация и Google Drive 🚀
+# 🚀 google-chat-utils v0.7.1: Инкрементальная дистилляция, интерактивный режим и Google Drive 🚀
 
 **Мощный и гибкий набор инструментов для парсинга чатов Google AI Studio, их объектного представления, генерации Markdown для RAG, дистилляции через LLM, реконструкции Python-кода и интеграции с Google Drive и Memory Compiler.**
 
@@ -21,7 +21,9 @@
     *   **Скачивание чатов по имени:** Команда `fetch-drive` ищет файл в папке "Google AI Studio" и сохраняет его локально.
     *   **Сквозной пайплайн:** Флаг `--parse` автоматически запускает парсинг сразу после скачивания (`fetch-drive --parse --distill`).
     *   **OAuth2 авторизация:** Интерактивная команда `auth-drive` и поддержка `.env` (`GDRIVE_REFRESH_TOKEN`).
-*   **Дистилляция чатов (v0.5.0):**
+*   **Дистилляция чатов (v0.5.0, v0.7.1):**
+    *   **Инкрементальная обработка (v0.7.1):** готовые `_distilled.md` пропускаются по умолчанию, не тратя токены LLM; принудительная перегенерация — флагом `--distill_overwrite`.
+    *   **Атомарная запись:** запись через временный файл `.tmp` + `os.replace` защищает существующие файлы от повреждения при сбоях.
     *   **Подпапки вывода:** `parse` складывает артефакты каждого файла в `<output_prefix>/<safe_stem>/`.
     *   **Команда `distill`:** Дистилляция готовых `_human.md` через LLM (редакция секретов, чанкинг, верификация).
     *   **`parse --distill`:** Дистилляция сразу после парсинга.
@@ -35,7 +37,7 @@
     *   Реконструкция исполняемых Python-скриптов для Gemini API с поддержкой оверрайдов.
     *   Модификация и применение оверрайдов к сырым JSON-файлам Studio (`apply_overrides_to_studio_json`).
 *   **Трансформация JSON Schema:** Утилиты для преобразования схем между форматами OpenAI, Gemini SchemaData и кодом `google.genai.types.Schema`.
-*   **Тестирование и CI/CD:** Полное покрытие тестами (101 тест), линтинг `ruff`, CI на GitHub Actions.
+*   **Тестирование и CI/CD:** Полное покрытие тестами (109 тестов), линтинг `ruff`, CI на GitHub Actions.
 
 ---
 
@@ -122,13 +124,19 @@
 
 ### 3. Дистилляция готовых `_human.md` (`distill`)
 
+По умолчанию готовые `_distilled.md` **пропускаются** (токены не расходуются). Для принудительной перегенерации используйте флаг `--distill_overwrite`.
+
 *   **Сухой прогон (оценка плана и токенов):**
     ```bash
     python utils/cli_v3.py distill --input_file output_data/Example/Example_human.md --distill_dry_run --llm_base_url "http://..." --llm_model "model"
     ```
-*   **Реальный запуск:**
+*   **Реальный запуск (с пропуском уже готовых файлов):**
     ```bash
     python utils/cli_v3.py distill --input_file output_data/Example/Example_human.md --llm_base_url "http://..." --llm_model "model" --yes
+    ```
+*   **Принудительная перегенерация (`--distill_overwrite`):**
+    ```bash
+    python utils/cli_v3.py distill --input_dir output_data --distill_overwrite --llm_base_url "http://..." --llm_model "model" --yes
     ```
 
 ### 4. Отправка лога в Memory Compiler (`log`)

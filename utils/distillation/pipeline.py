@@ -44,6 +44,7 @@ class DistillConfig:
     distill_thoughts: str = "drop"          # drop|keep
     dry_run: bool = False
     assume_yes: bool = False
+    overwrite: bool = False                 # --distill_overwrite: allow overwriting existing _distilled.md
     output_dir: Optional[str] = None        # None = next to input file
     log: callable = print
 
@@ -128,7 +129,7 @@ def distill_human_markdown(input_path: str, cfg: DistillConfig) -> Optional[str]
     out_dir = cfg.output_dir or os.path.dirname(os.path.abspath(input_path))
     os.makedirs(out_dir, exist_ok=True)
     out_path = os.path.join(out_dir, f"{stem}_distilled.md")
-    if os.path.exists(out_path):
+    if os.path.exists(out_path) and not getattr(cfg, "overwrite", False):
         raise DistillError(
             f"Файл уже существует, перезапись запрещена (удалите вручную): {out_path}")
 
@@ -202,8 +203,16 @@ def distill_human_markdown(input_path: str, cfg: DistillConfig) -> Optional[str]
         prep.text, prep.turn_count)
 
     final = render_distilled(meta, body, verification, input_path, prep, cfg)
-    with open(out_path, "w", encoding="utf-8") as f:
-        f.write(final)
+    # Atomic write: write to tmp, then replace (old file stays intact on error)
+    tmp_path = out_path + ".tmp"
+    try:
+        with open(tmp_path, "w", encoding="utf-8") as f:
+            f.write(final)
+        os.replace(tmp_path, out_path)
+    except Exception:
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
+        raise
     log(f"  💾 Записан: {out_path}")
 
     # Re-verify the actually written document

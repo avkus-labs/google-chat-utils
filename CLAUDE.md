@@ -68,11 +68,14 @@ All commands can be run directly from the repository root:
 
 - **Distill Human Markdown Files via LLM:**
   ```bash
-  # Dry-run token estimation
+  # Dry-run token estimation (skips existing _distilled.md files by default)
   python utils/cli_v3.py distill --input_file output_data/Example/Example_human.md --distill_dry_run --llm_base_url "<url>" --llm_model "<model>"
 
   # Run distillation
   python utils/cli_v3.py distill --input_file output_data/Example/Example_human.md --llm_base_url "<url>" --llm_model "<model>" --yes
+
+  # Force regenerate existing _distilled.md
+  python utils/cli_v3.py distill --input_file output_data/Example/Example_human.md --distill_overwrite --llm_base_url "<url>" --llm_model "<model>" --yes
   ```
 
 - **Reconstruct Python Code:**

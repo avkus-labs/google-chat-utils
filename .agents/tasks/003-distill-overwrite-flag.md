@@ -2,7 +2,7 @@
 type: task
 id: "003"
 slug: distill-overwrite-flag
-status: open
+status: completed
 executor: Antigravity
 repo: avkus-labs/google-chat-utils
 branch: feature/distill-overwrite-003

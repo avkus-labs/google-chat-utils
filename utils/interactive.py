@@ -88,7 +88,9 @@ def interactive_parse(handlers: Dict[str, Callable[[Any], None]]):
 
     llm_base_url = None
     llm_model = None
+    distill_overwrite = False
     if distill:
+        distill_overwrite = prompt_bool("Перезаписать уже готовые _distilled.md?", default=False)
         llm_base_url = prompt_input("LLM Base URL", default=os.getenv("DISTILLER_BASE_URL", "http://localhost:11434/v1"))
         llm_model = prompt_input("LLM Model", default=os.getenv("DISTILLER_MODEL", "qwen2.5:14b"))
 
@@ -98,6 +100,7 @@ def interactive_parse(handlers: Dict[str, Callable[[Any], None]]):
         output_prefix=output_prefix,
         log_to_memory=log_to_memory,
         distill=distill,
+        distill_overwrite=distill_overwrite,
         llm_base_url=llm_base_url,
         llm_model=llm_model,
         distill_preset=None,
@@ -169,6 +172,7 @@ def interactive_distill(handlers: Dict[str, Callable[[Any], None]]):
     llm_base_url = prompt_input("LLM Base URL", default=os.getenv("DISTILLER_BASE_URL", "http://localhost:11434/v1"))
     llm_model = prompt_input("LLM Model", default=os.getenv("DISTILLER_MODEL", "qwen2.5:14b"))
     dry_run = prompt_bool("Dry run (без реальных вызовов LLM)?", default=False)
+    distill_overwrite = prompt_bool("Перезаписать уже готовые _distilled.md?", default=False)
 
     args = argparse.Namespace(
         input_file=input_file,
@@ -176,6 +180,7 @@ def interactive_distill(handlers: Dict[str, Callable[[Any], None]]):
         output_dir=None,
         llm_base_url=llm_base_url,
         llm_model=llm_model,
+        distill_overwrite=distill_overwrite,
         distill_preset=None,
         distill_concurrency=None,
         distill_retries=None,

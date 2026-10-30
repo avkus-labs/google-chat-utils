@@ -325,6 +325,8 @@ def _add_distill_options(p):
                    help="Ограничить число чанков на файл (для пробных прогонов).")
     p.add_argument("--distill_thoughts", choices=["drop", "keep"], default="drop",
                    help="Что делать с Model Thoughts (по умолчанию drop).")
+    p.add_argument("--distill_overwrite", action="store_true",
+                   help="Перезаписать готовые _distilled.md. Без флага: готовые пропускаются, не ошибка.")
 
 
 def build_distill_config(args, output_dir=None):
@@ -340,27 +342,66 @@ def build_distill_config(args, output_dir=None):
     cfg.distill_thoughts = args.distill_thoughts
     cfg.dry_run = args.distill_dry_run
     cfg.assume_yes = args.yes
+    cfg.overwrite = getattr(args, "distill_overwrite", False)
     cfg.output_dir = output_dir
     return cfg
 
 
+def _distilled_path_for(human_path: str, output_dir=None) -> str:
+    """Return expected _distilled.md path for a given _human.md path."""
+    stem = os.path.basename(human_path)
+    if stem.endswith("_human.md"):
+        stem = stem[:-len("_human.md")]
+    elif stem.endswith(".md"):
+        stem = stem[:-3]
+    out_dir = output_dir or os.path.dirname(os.path.abspath(human_path))
+    return os.path.join(out_dir, f"{stem}_distilled.md")
+
+
 def run_distill_batch(human_files, args, output_dir=None):
-    """Общий flow дистилляции (задача 001): план → подтверждение → последовательные вызовы."""
+    """Общий flow дистилляции: план → подтверждение → последовательные вызовы.
+
+    По умолчанию готовые _distilled.md пропускаются (не ошибка).
+    При --distill_overwrite — включаются в план и перегенерируются.
+    """
     cfg = build_distill_config(args, output_dir)
 
-    preps = []
+    skipped = []
+    to_process = []
+
     for path in human_files:
+        out_path = _distilled_path_for(path, output_dir)
+        if os.path.exists(out_path) and not cfg.overwrite:
+            skipped.append(path)
+            print(f"{YELLOW}⏭ пропуск (уже есть): {os.path.normpath(out_path)}{RESET}")
+        else:
+            to_process.append(path)
+
+    if skipped:
+        print(f"  пропущено {len(skipped)}, к обработке {len(to_process)}")
+        if not to_process:
+            print(f"{YELLOW}  Все файлы уже дистиллированы. Используйте --distill_overwrite для перегенерации.{RESET}")
+            return
+
+    preps = []
+    for path in to_process:
         try:
             distill_pipeline.validate_turn_headers(path)
-            preps.append((path, distill_pipeline.prepare(path, cfg)))
+            prep = distill_pipeline.prepare(path, cfg)
+            preps.append((path, prep))
         except distill_pipeline.DistillError as e:
             print(f"{RED}Ошибка: {e}{RESET}", file=sys.stderr)
             sys.exit(e.exit_code)
 
+    if not preps:
+        return
+
     print(f"{BOLD}План дистилляции:{RESET}")
     total_tokens = 0
     for path, prep in preps:
-        print(distill_pipeline.plan_line(path, prep))
+        out_path = _distilled_path_for(path, output_dir)
+        overwrite_label = f" {YELLOW}[перезапись]{RESET}" if cfg.overwrite and os.path.exists(out_path) else ""
+        print(distill_pipeline.plan_line(path, prep) + overwrite_label)
         if prep.redaction_counts:
             print(f"    редакция секретов: {prep.redaction_counts}")
         total_tokens += prep.estimated_input_tokens
