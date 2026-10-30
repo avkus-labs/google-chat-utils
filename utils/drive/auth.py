@@ -6,7 +6,6 @@ and manages token refresh and interactive OAuth flow.
 """
 
 import os
-import json
 from typing import Optional
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow

@@ -1,6 +1,6 @@
-# 📚 Документация по проекту google-chat-utils v0.4.0
+# 📚 Документация по проекту google-chat-utils v0.5.0
 
-Добро пожаловать! Здесь собраны все основные сведения, примеры и справка по работе с утилитами для парсинга, реконструкции, трансформации и интеграции с Memory Compiler.
+Добро пожаловать! Здесь собраны все основные сведения, примеры и справка по работе с утилитами для парсинга, дистилляции, реконструкции, трансформации и интеграции с Google Drive и Memory Compiler.
 
 ## 🗂️ Структура документации
 
@@ -17,45 +17,64 @@
 
 ### 1. Парсинг чата (`parse`)
 
+- **Парсинг одного файла в подпапку:**
+  ```bash
+  python utils/cli_v3.py parse --input_file data/Example --output_prefix output_data/
+  ```
 - **Парсинг с автоматической отправкой в Memory Compiler:**
   ```bash
-  python utils/cli_v3.py parse --input_file data/Example.json --log_to_memory
+  python utils/cli_v3.py parse --input_file data/Example --log_to_memory
   ```
 - **Парсинг директории:**
   ```bash
   python utils/cli_v3.py parse --input_dir data/ --output_prefix output_data/
   ```
 
-### 2. Отправка лога в Memory Compiler (`log`)
+### 2. Дистилляция Markdown (`distill`)
+
+- **Сухой прогон (оценка токенов):**
+  ```bash
+  python utils/cli_v3.py distill --input_file output_data/Example/Example_human.md --distill_dry_run --llm_base_url "http://..." --llm_model "model"
+  ```
+- **Запуск дистилляции:**
+  ```bash
+  python utils/cli_v3.py distill --input_file output_data/Example/Example_human.md --llm_base_url "http://..." --llm_model "model" --yes
+  ```
+
+### 3. Отправка лога в Memory Compiler (`log`)
 
 ```bash
 python utils/cli_v3.py log --input_file "path/to/your/file.md" --section "Your Section Name"
 ```
 
-### 3. Реконструкция Python-кода (`reconstruct`)
+### 4. Реконструкция Python-кода (`reconstruct`)
 
 ```bash
 python utils/cli_v3.py reconstruct \
-    --input_json output_data/Example_intermediate.json \
-    --output_py output_data/Example_reconstructed.py \
+    --input_json output_data/Example/Example_intermediate.json \
+    --output_py output_data/Example/Example_reconstructed.py \
     --template_dir templates/ \
-    --template_name gemini_studio_vanilla.py.tpl
+    --template_name gemini_studio_vanilla.py.tpl \
+    --model_name "gemini-2.5-flash"
 ```
 
-### 4. Реконструкция JSON для Google AI Studio (`reconstruct_studio_json`)
+### 5. Применение оверрайдов к Studio JSON (`apply_overrides_to_studio_json`)
 
 ```bash
-python utils/cli_v3.py reconstruct_studio_json \
-    --input_intermediate_json output_data/Example_intermediate.json \
-    --output_studio_json_file output_data/Example_studio.json
+python utils/cli_v3.py apply_overrides_to_studio_json \
+    --input_studio_json data/Example \
+    --output_studio_json output_data/Example_overridden.json \
+    --si_file data/Example.si \
+    --fi_file data/Example.fi \
+    --fi_mode replace \
+    --li_mode append
 ```
 
-### 5. Трансформация схем (OpenAI → Gemini)
+### 6. Трансформация схем (OpenAI → Gemini)
 
 ```bash
 python -m utils.transformation.schema_transformer \
-    --openai_to_gemini data/example_openai_schema.json \
-    --output_gemini_file output_data/example_gemini_schema.json
+    --openai_to_gemini data/example_openai_schema.json output_data/example_gemini_schema.json
 ```
 
 ---
@@ -70,14 +89,10 @@ from utils.core.chat_elements import IntermediateChatData
 parser = GoogleAIStudioJSONParser()
 
 # Парсинг файла
-intermediate_data: IntermediateChatData | None = parser.parse_file('data/Example.json')
+intermediate_data: IntermediateChatData | None = parser.parse('data/Example')
 
 # Генерация Markdown, если парсинг успешен
 if intermediate_data:
     markdown_output = parser.to_markdown(intermediate_data, "human")
     print("Markdown сгенерирован.")
 ```
-
----
-
-Для подробностей по API каждого модуля см. соответствующие разделы документации.

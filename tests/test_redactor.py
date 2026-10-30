@@ -1,6 +1,5 @@
 """Tests for secret redaction (no real secrets used)."""
 
-import pytest
 from utils.distillation.redactor import redact_secrets, REDACTED
 
 

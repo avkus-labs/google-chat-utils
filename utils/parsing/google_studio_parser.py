@@ -30,7 +30,7 @@ def load_json_file(file_path: str) -> Optional[Dict[str, Any]]:
     except json.JSONDecodeError:
         # print(f"Error: Could not decode JSON from file {file_path}")
         return None
-    except Exception as e:
+    except Exception:
         # print(f"An unexpected error occurred while loading {file_path}: {e}")
         return None
 
@@ -427,11 +427,11 @@ class GoogleAIStudioJSONParser:
             # or we'd use SchemaTransformer here (gemini_schema_to_openai_dict then json.dumps).
             # For simplicity, using __repr__ or a summary:
             schema_for_md = intermediate_data.run_settings.raw_settings.get('responseSchema', {})
-            md_add(f"  <response_schema_definition name='configuredResponseSchema'>")
+            md_add("  <response_schema_definition name='configuredResponseSchema'>")
             md_add("    ```json")
             md_add(json.dumps(schema_for_md, indent=2, ensure_ascii=False))
             md_add("    ```")
-            md_add(f"  </response_schema_definition>")
+            md_add("  </response_schema_definition>")
         md_add("</generation_settings>\n")
 
         # Configured Tools from ToolConfiguration list
@@ -459,8 +459,8 @@ class GoogleAIStudioJSONParser:
                         md_add("        ```json")
                         md_add(json.dumps(params_schema_for_md, indent=2, ensure_ascii=False))
                         md_add("        ```")
-                        md_add(f"      </parameters_schema>")
-                        md_add(f"    </function>")
+                        md_add("      </parameters_schema>")
+                        md_add("    </function>")
                     md_add("  </tool>")
             md_add("</configured_tools>\n")
         else:
@@ -484,8 +484,8 @@ class GoogleAIStudioJSONParser:
                 md_add(f"  <turn role='{turn.role}' id='{turn_id_val}'>")
                 if not turn.parts:
                     placeholder = "<!-- Empty turn -->"
-                    if turn.role == "user": placeholder = f'    <message_text><!-- Empty user message --></message_text>'
-                    elif turn.role == "model": placeholder = f'    <response_text><!-- Empty model response --></response_text>'
+                    if turn.role == "user": placeholder = '    <message_text><!-- Empty user message --></message_text>'
+                    elif turn.role == "model": placeholder = '    <response_text><!-- Empty model response --></response_text>'
                     md_add(placeholder)
                 else:
                     for part_idx, part in enumerate(turn.parts):
@@ -503,30 +503,30 @@ class GoogleAIStudioJSONParser:
                         elif isinstance(part, ExecutableCodePart):
                             md_add(f"    <executable_code language='{part.language}'>")
                             md_add(f"      <![CDATA[{part.code_content}]]>")
-                            md_add(f"    </executable_code>")
+                            md_add("    </executable_code>")
                         elif isinstance(part, CodeExecutionResultPart):
                             md_add(f"    <code_execution_result outcome='{part.outcome}'>")
                             md_add(f"      <output><![CDATA[{part.output_content}]]></output>")
-                            md_add(f"    </code_execution_result>")
+                            md_add("    </code_execution_result>")
                         elif isinstance(part, FunctionCallPart):
                             md_add(f"    <function_call name='{part.name}'>")
-                            md_add(f"      <arguments>")
+                            md_add("      <arguments>")
                             md_add("        ```json")
                             md_add(json.dumps(part.args, indent=2, ensure_ascii=False))
                             md_add("        ```")
-                            md_add(f"      </arguments>")
-                            md_add(f"    </function_call>")
+                            md_add("      </arguments>")
+                            md_add("    </function_call>")
                         elif isinstance(part, FunctionResponsePart):
                             md_add(f"    <function_response name='{part.name}'>")
-                            md_add(f"      <response_data>")
+                            md_add("      <response_data>")
                             md_add("        ```json")
                             md_add(json.dumps(part.response_content, indent=2, ensure_ascii=False))
                             md_add("        ```")
-                            md_add(f"      </response_data>")
-                            md_add(f"    </function_response>")
+                            md_add("      </response_data>")
+                            md_add("    </function_response>")
                         else:
                             md_add(f"    <unknown_part type='{type(part).__name__}'><![CDATA[{str(part)}]]></unknown_part>")
-                md_add(f"  </turn>")
+                md_add("  </turn>")
         md_add("</dialogue_history>")
         return "\n".join(markdown_parts)
 
@@ -542,7 +542,8 @@ class GoogleAIStudioJSONParser:
         
         if intermediate_data.system_instruction and intermediate_data.system_instruction.text.strip():
             md_add("### System Instruction")
-            md_add(f"> {intermediate_data.system_instruction.text.strip().replace('\\n', '\\n> ')}\n")
+            si_body = intermediate_data.system_instruction.text.strip().replace('\n', '\n> ')
+            md_add(f"> {si_body}\n")
 
         if not intermediate_data.dialogue_history:
             md_add("*No dialogue history available.*")

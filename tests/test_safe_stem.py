@@ -1,6 +1,5 @@
 """Tests for safe_stem function."""
 
-import pytest
 from utils.distillation.safe_stem import safe_stem
 
 

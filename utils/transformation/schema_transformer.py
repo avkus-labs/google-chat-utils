@@ -1,8 +1,7 @@
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, Optional
 import json # For openai_to_gemini_schema's enum representation if needed by genai_types.Schema
 from utils.core.schema_elements import SchemaData
 import argparse
-import os
 
 # This map is similar to the one in reconstructor_v2.py
 # It maps our SchemaData.type (which should be upper case like Gemini's API)
@@ -209,7 +208,6 @@ class SchemaTransformer:
         return result_dict
 
 if __name__ == '__main__':
-    import sys
     def print_emoji(msg):
         print(f"\U0001F916 {msg}")
 

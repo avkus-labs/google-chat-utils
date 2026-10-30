@@ -1,6 +1,5 @@
 """Tests for the deterministic verifier."""
 
-import pytest
 from utils.distillation.verifier import verify, parse_frontmatter
 
 

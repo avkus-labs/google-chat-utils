@@ -1,13 +1,42 @@
-import sys, os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-import json
-from utils.reconstruction.gemini_code_reconstructor import GeminiAPICodeReconstructor
-from utils.core.chat_elements import IntermediateChatData
+import os
+import sys
 
-def test_reconstruct_python_code():
-    with open('output_data/Example6_intermediate.json', encoding='utf-8') as f:
-        data = json.load(f)
-    intermediate = IntermediateChatData.from_dict(data)
-    reconstructor = GeminiAPICodeReconstructor(template_dir='utils/templates')
-    code = reconstructor.reconstruct(intermediate, 'gemini_studio_default.py.tpl')
-    assert 'def generate(' in code 
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from utils.parsing.google_studio_parser import GoogleAIStudioJSONParser
+from utils.reconstruction.gemini_code_reconstructor import GeminiAPICodeReconstructor
+
+
+def test_reconstruct_vanilla_python_code():
+    parser = GoogleAIStudioJSONParser()
+    intermediate = parser.parse('data/Example')
+    assert intermediate is not None
+    intermediate.run_settings.model = 'gemini-2.5-flash'
+
+    reconstructor = GeminiAPICodeReconstructor(template_dir='templates')
+    code = reconstructor.reconstruct(
+        intermediate_data=intermediate,
+        template_name='gemini_studio_vanilla.py.tpl',
+        api_key_var_name='MY_API_KEY'
+    )
+    assert 'from google import genai' in code
+    assert 'MODEL_NAME = ' in code
+    assert 'client = genai.Client' in code
+    assert 'gemini-2.5-flash' in code
+
+
+def test_reconstruct_dynamic_si_code():
+    parser = GoogleAIStudioJSONParser()
+    intermediate = parser.parse('data/Example')
+    assert intermediate is not None
+    intermediate.run_settings.model = 'gemini-2.5-pro'
+
+    reconstructor = GeminiAPICodeReconstructor(template_dir='templates')
+    code = reconstructor.reconstruct(
+        intermediate_data=intermediate,
+        template_name='gemini_studio_dynamic_si.py.tpl',
+        api_key_var_name='MY_API_KEY'
+    )
+    assert 'from google import genai' in code
+    assert 'def generate():' in code
+    assert 'client.models.generate_content_stream' in code
+    assert 'gemini-2.5-pro' in code

@@ -10,14 +10,14 @@ if PROJECT_ROOT not in sys.path:
     sys.path.append(PROJECT_ROOT)
 
 # Цветовые коды ANSI
-RESET = "\\033[0m"
-BOLD = "\\033[1m"
-GREEN = "\\033[92m"
-YELLOW = "\\033[93m"
-RED = "\\033[91m"
-BLUE = "\\033[94m"
-CYAN = "\\033[96m"
-MAGENTA = "\\033[95m"
+RESET = "\033[0m"
+BOLD = "\033[1m"
+GREEN = "\033[92m"
+YELLOW = "\033[93m"
+RED = "\033[91m"
+BLUE = "\033[94m"
+CYAN = "\033[96m"
+MAGENTA = "\033[95m"
 
 SEPARATOR = f"{CYAN}{'-'*56}{RESET}"
 
@@ -245,7 +245,8 @@ def handle_reconstruct(args):
         python_script = reconstructor.reconstruct(
             intermediate_data=intermediate_data_for_reconstruct,
             template_name=args.template_name,
-            api_key_var_name=args.api_key_var_name
+            api_key_var_name=args.api_key_var_name,
+            model_name=args.model_name
         )
         with open(full_output_py_path, 'w', encoding='utf-8') as f:
             f.write(python_script)
@@ -303,7 +304,7 @@ def handle_log(args):
         print(f"{RED}❌ Ошибка при чтении файла {input_file}: {e}{RESET}", file=sys.stderr)
 
 def _add_distill_options(p):
-    """Общие флаги дистилляции для команд 'parse' и 'distill'."""
+    """Общие флаги дистилляции для команд 'parse', 'distill' и 'fetch-drive'."""
     p.add_argument("--distill_dry_run", action="store_true",
                    help="Только план (ходы/чанки/оценка токенов), без вызова LLM.")
     p.add_argument("--yes", action="store_true",
@@ -344,11 +345,7 @@ def build_distill_config(args, output_dir=None):
 
 
 def run_distill_batch(human_files, args, output_dir=None):
-    """Общий flow дистилляции (задача 001): план → подтверждение → последовательные вызовы.
-
-    Используется и из 'parse --distill', и из команды 'distill' — общая точка
-    входа в пайплайн: distill_pipeline.distill_human_markdown(path, cfg).
-    """
+    """Общий flow дистилляции (задача 001): план → подтверждение → последовательные вызовы."""
     cfg = build_distill_config(args, output_dir)
 
     preps = []
@@ -407,7 +404,6 @@ def handle_distill(args):
         if not os.path.isdir(args.input_dir):
             print(f"{RED}Ошибка: Директория не найдена: {args.input_dir}{RESET}", file=sys.stderr)
             sys.exit(2)
-        # Только *_human.md, без рекурсии
         for filename in sorted(os.listdir(args.input_dir)):
             if filename.endswith("_human.md"):
                 full = os.path.join(args.input_dir, filename)
@@ -424,11 +420,66 @@ def handle_distill(args):
     run_distill_batch(human_files, args, output_dir=args.output_dir)
 
 
+def handle_auth_drive(args):
+    """Команда 'auth-drive': интерактивная авторизация в Google Drive."""
+    try:
+        from utils.drive.auth import run_interactive_auth
+    except ImportError as e:
+        print(f"{RED}Ошибка: Зависимости Google Drive не установлены ({e}). Установите их: pip install -r requirements.txt{RESET}", file=sys.stderr)
+        sys.exit(1)
+    try:
+        run_interactive_auth(client_secrets_file=args.client_secrets, token_path=args.token_path)
+    except Exception as e:
+        print(f"{RED}Ошибка авторизации Google Drive: {e}{RESET}", file=sys.stderr)
+        sys.exit(1)
+
+
+def handle_fetch_drive(args):
+    """Команда 'fetch-drive': поиск и скачивание чата из Google Drive."""
+    try:
+        from utils.drive.client import GoogleDriveChatFetcher
+    except ImportError as e:
+        print(f"{RED}Ошибка: Зависимости Google Drive не установлены ({e}). Установите их: pip install -r requirements.txt{RESET}", file=sys.stderr)
+        sys.exit(1)
+
+    print(f"{BOLD}{BLUE}🚀 Запуск команды [fetch-drive] 🚀{RESET}")
+    print(SEPARATOR)
+    print(f"{BOLD}🔍 Имя чата:{RESET} {args.chat_name}")
+    print(f"{BOLD}📁 Целевая папка:{RESET} {os.path.normpath(args.output_dir)}")
+    print(SEPARATOR)
+
+    try:
+        fetcher = GoogleDriveChatFetcher()
+        downloaded_path = fetcher.fetch_chat_file(
+            chat_name=args.chat_name,
+            output_dir=args.output_dir,
+            folder_id=args.folder_id
+        )
+        print(f"{GREEN}✅ Чат успешно скачан: {os.path.normpath(downloaded_path)}{RESET}")
+
+        if args.parse:
+            print(f"\n{BOLD}{CYAN}▶️ Автоматический запуск парсинга...{RESET}")
+            parser_instance = GoogleAIStudioJSONParser()
+            output_prefix = args.output_prefix if args.output_prefix else "output_data/"
+            human_path = process_single_parse_file(downloaded_path, parser_instance, output_prefix)
+            if human_path and getattr(args, 'log_to_memory', False):
+                with open(human_path, 'r', encoding='utf-8') as f:
+                    log_to_memory_compiler(f.read(), "Google-Chat-Utils", f"Import: {os.path.basename(downloaded_path)}")
+            if human_path and getattr(args, 'distill', False):
+                if not args.llm_base_url or not args.llm_model:
+                    print(f"{RED}Ошибка: --distill требует указания --llm_base_url и --llm_model{RESET}", file=sys.stderr)
+                    sys.exit(2)
+                run_distill_batch([human_path], args)
+    except Exception as e:
+        print(f"{RED}❌ Ошибка: {e}{RESET}", file=sys.stderr)
+        sys.exit(1)
+
+
 def main():
     """Main function for the CLI."""
     parser = argparse.ArgumentParser(
         description="Google Chat Utils v3 CLI: Parse AI Studio exports and reconstruct Gemini API code.",
-        formatter_class=argparse.RawTextHelpFormatter # For better help text formatting
+        formatter_class=argparse.RawTextHelpFormatter
     )
     subparsers = parser.add_subparsers(dest="command", help="Available commands. Use <command> --help for more details.", required=True)
 
@@ -454,16 +505,16 @@ def main():
     # --- Parser for the 'reconstruct' command ---
     reconstruct_parser = subparsers.add_parser("reconstruct",
         help="Reconstruct Python script from intermediate JSON.",
-        description="Reconstructs an executable Python script for the Gemini API from an intermediate JSON file (typically one produced by the 'parse' command, though direct AI Studio JSON might also work if rich enough for the parser)."
+        description="Reconstructs an executable Python script for the Gemini API from an intermediate JSON file."
     )
     reconstruct_parser.add_argument("--input_json", "-ij", metavar="PATH_TO_INTERMEDIATE_JSON", required=True,
-                                    help="Path to the intermediate JSON file (e.g., output_v3_data/MyChat/intermediate.json).")
+                                    help="Path to the intermediate JSON file.")
     reconstruct_parser.add_argument("--output_py", "-op", metavar="FILENAME.py", required=True,
-                                    help="Name of the output Python script (e.g., reconstructed_chat.py). It will be saved in the same directory as the input_json.")
+                                    help="Name of the output Python script. It will be saved in the same directory as input_json.")
     reconstruct_parser.add_argument("--template_dir", "-td", metavar="PATH_TO_TEMPLATES", required=True,
                                     help="Path to the directory containing .py.tpl template files.")
     reconstruct_parser.add_argument("--template_name", "-tn", metavar="TEMPLATE_FILENAME", required=True,
-                                    help="Name of the template file within the template directory (e.g., gemini_studio_default.py.tpl).")
+                                    help="Name of the template file within the template directory.")
     reconstruct_parser.add_argument("--api_key_var_name", "-ak", default="YOUR_API_KEY",
                                     help="Name of the API key variable in the generated script. Default: YOUR_API_KEY")
     reconstruct_parser.add_argument("--model_name", metavar="MODEL_NAME", required=True,
@@ -498,7 +549,7 @@ def main():
     # --- Parser for the 'distill' command ---
     distill_parser = subparsers.add_parser("distill",
         help="Distill existing _human.md files via LLM (no re-parsing).",
-        description="Дистилляция готовых _human.md: редакция секретов, чанкинг, вызовы LLM, верификация. Выход: <stem>_distilled.md рядом со входным файлом (или в --output_dir). Существующие _distilled.md не перезаписываются."
+        description="Дистилляция готовых _human.md: редакция секретов, чанкинг, вызовы LLM, верификация."
     )
     distill_input_group = distill_parser.add_mutually_exclusive_group(required=True)
     distill_input_group.add_argument("--input_file", "-i", metavar="FILE_PATH",
@@ -510,7 +561,40 @@ def main():
     _add_distill_options(distill_parser)
     distill_parser.set_defaults(func=handle_distill)
 
-    if len(sys.argv) == 1: # If no command is provided, print help and exit
+    # --- Parser for the 'auth-drive' command ---
+    auth_drive_parser = subparsers.add_parser("auth-drive",
+        help="Interactive OAuth2 authorization for Google Drive.",
+        description="Запускает интерактивный OAuth2 flow для получения refresh-токена Google Drive."
+    )
+    auth_drive_parser.add_argument("--client_secrets", default="client_secret.json",
+                                   help="Путь к client_secret.json. По умолчанию: client_secret.json")
+    auth_drive_parser.add_argument("--token_path", default=".gdrive_token.json",
+                                   help="Путь для сохранения токена. По умолчанию: .gdrive_token.json")
+    auth_drive_parser.set_defaults(func=handle_auth_drive)
+
+    # --- Parser for the 'fetch-drive' command ---
+    fetch_drive_parser = subparsers.add_parser("fetch-drive",
+        help="Fetch chat export from Google Drive by name.",
+        description="Поиск и скачивание файла чата из Google Drive (папка 'Google AI Studio')."
+    )
+    fetch_drive_parser.add_argument("--chat_name", "-c", required=True,
+                                    help="Имя чата или подстрока для поиска на Google Drive.")
+    fetch_drive_parser.add_argument("--output_dir", "-d", default="input_data",
+                                    help="Папка для сохранения скачанного файла. По умолчанию: input_data")
+    fetch_drive_parser.add_argument("--folder_id", default=None,
+                                    help="ID папки на Google Drive (по умолчанию ищет папку 'Google AI Studio').")
+    fetch_drive_parser.add_argument("--parse", action="store_true",
+                                    help="Автоматически запустить парсинг после успешного скачивания.")
+    fetch_drive_parser.add_argument("--output_prefix", "-o", default="output_data/",
+                                    help="Базовая папка вывода при парсинге. По умолчанию: output_data/")
+    fetch_drive_parser.add_argument("--log_to_memory", "-l", action="store_true",
+                                    help="Отправить результат в Memory Compiler (если указан --parse).")
+    fetch_drive_parser.add_argument("--distill", action="store_true",
+                                    help="Дистиллировать результат через LLM (если указан --parse).")
+    _add_distill_options(fetch_drive_parser)
+    fetch_drive_parser.set_defaults(func=handle_fetch_drive)
+
+    if len(sys.argv) == 1:
         parser.print_help(sys.stderr)
         sys.exit(1)
 

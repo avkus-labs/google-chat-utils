@@ -1,7 +1,7 @@
 import os
 import json
 import datetime # For __main__ block
-from typing import List, Dict, Any, Optional, Union
+from typing import List, Optional
 
 # Core data models
 from utils.core.chat_elements import (
@@ -66,7 +66,7 @@ class GeminiAPICodeReconstructor:
                 continue
             part_code_strings = self._generate_parts_code(turn.parts)
             if part_code_strings:
-                parts_joined_str = f",\n                ".join(part_code_strings)
+                parts_joined_str = ",\n                ".join(part_code_strings)
                 api_role = turn.role
                 if api_role not in ["user", "model"]:
                     api_role = "user"
@@ -78,7 +78,7 @@ class GeminiAPICodeReconstructor:
                 )
         if not history_entries_code:
             return "[]"
-        return f"[\n" + ",\n".join(history_entries_code) + "\n]"
+        return "[\n" + ",\n".join(history_entries_code) + "\n]"
 
     def _generate_tools_code(self, tool_configurations: Optional[List[ToolConfiguration]]) -> str:
         if not tool_configurations:
@@ -99,7 +99,7 @@ class GeminiAPICodeReconstructor:
                         f")"
                     )
                 if func_decl_codes:
-                    joined_func_decls = f",\n                ".join(func_decl_codes)
+                    joined_func_decls = ",\n                ".join(func_decl_codes)
                     tool_code_objects_str.append(
                         f"types.Tool(\n"
                         f"    function_declarations=[\n                {joined_func_decls}\n    ]\n"
@@ -140,7 +140,7 @@ class GeminiAPICodeReconstructor:
             gen_config_args.append(f"response_schema={schema_code}")
         if not gen_config_args:
             return "None"
-        args_joined_str = f",\n        ".join(gen_config_args)
+        args_joined_str = ",\n        ".join(gen_config_args)
         return f"types.GenerationConfig(\n        {args_joined_str}\n    )"
 
     def _generate_response_schema_code(self, run_settings: RunSettingsData) -> str:

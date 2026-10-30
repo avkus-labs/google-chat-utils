@@ -20,21 +20,19 @@ pip install -r requirements.txt
 
 ```bash
 # Run all tests (run from project root)
-pytest
+python -m pytest
 
-# Run a single test file
-pytest tests/test_parsing.py
-pytest tests/test_reconstruction.py
-pytest tests/test_studio_json_reconstruction.py
+# Run distillation pipeline tests (73 tests)
+python -m pytest tests/test_pipeline.py tests/test_chunker.py tests/test_redactor.py tests/test_verifier.py tests/test_safe_stem.py tests/test_llm_client.py
 
-# Run a single test function
-pytest tests/test_parsing.py -k test_parse_example1
+# Run Google Drive fetcher tests
+python -m pytest tests/test_drive_fetch.py
 
 # Run tests with coverage
 coverage run -m pytest && coverage report
 
 # Lint code
-pylint utils/ tests/
+ruff check utils/ tests/
 ```
 
 ### CLI Commands (`utils/cli_v3.py`)
@@ -43,7 +41,7 @@ All commands can be run directly from the repository root:
 
 - **Parse Google AI Studio Chat Exports:**
   ```bash
-  # Parse single file (generates intermediate.json, raw_rag.md, human.md in output_prefix)
+  # Parse single file (generates intermediate.json, raw_rag.md, human.md in output_prefix/<stem>/)
   python utils/cli_v3.py parse --input_file <path_to_chat_file> --output_prefix output_data/
 
   # Parse directory of chat exports
@@ -51,6 +49,18 @@ All commands can be run directly from the repository root:
 
   # Parse and automatically send human.md to Memory Compiler daily log
   python utils/cli_v3.py parse --input_file <path_to_chat_file> --output_prefix output_data/ --log_to_memory
+
+  # Parse and immediately distill using LLM
+  python utils/cli_v3.py parse --input_file <path_to_chat_file> --distill --distill_dry_run --llm_base_url "<url>" --llm_model "<model>"
+  ```
+
+- **Distill Human Markdown Files via LLM:**
+  ```bash
+  # Dry-run token estimation
+  python utils/cli_v3.py distill --input_file output_data/Example/Example_human.md --distill_dry_run --llm_base_url "<url>" --llm_model "<model>"
+
+  # Run distillation
+  python utils/cli_v3.py distill --input_file output_data/Example/Example_human.md --llm_base_url "<url>" --llm_model "<model>" --yes
   ```
 
 - **Reconstruct Python Code:**
@@ -99,7 +109,7 @@ python -m utils.transformation.schema_transformer \
 
 ## High-Level Architecture
 
-The repository parses Google AI Studio chat session exports, converts them into a structured intermediate object model, exports Markdown for RAG/Memory Compiler, and reconstructs executable Python scripts or modified Studio JSON files.
+The repository parses Google AI Studio chat session exports, converts them into a structured intermediate object model, exports Markdown for RAG/Memory Compiler, distills content using LLMs, and reconstructs executable Python scripts or modified Studio JSON files.
 
 - **`utils/core/` (Data Models):**
   - `chat_elements.py`: Defines object-oriented models for chats (`IntermediateChatData`, `ChatMessage`, and part types: `TextPart`, `ThoughtsPart`, `ExecutableCodePart`, `CodeExecutionResultPart`, `FunctionCallPart`, `FunctionResponsePart`, `InlineDataPart`, `UriReferencePart`). Handles serialization (`to_dict`) and deserialization (`from_dict`).
@@ -107,6 +117,17 @@ The repository parses Google AI Studio chat session exports, converts them into 
 
 - **`utils/parsing/` (Ingestion & Extraction):**
   - `google_studio_parser.py`: Implements `GoogleAIStudioJSONParser`. Normalizes raw chat chunks, extracts system instructions and role turns (user/model), checks for companion override files (`.si` system instruction, `.fi` first input, `.li` last input), and generates both RAG Markdown (`_raw_rag.md`, `_human.md`) and intermediate JSON (`_intermediate.json`).
+
+- **`utils/distillation/` (LLM-based Compression & RAG Preparation):**
+  - `pipeline.py`: Orchestrates multi-step distillation: secret redaction, turn-boundary chunking, LLM execution with disk caching, and verification.
+  - `redactor.py`: Redacts 11 patterns of sensitive tokens/keys before LLM invocation.
+  - `chunker.py`: Splits large dialogs into turn-aligned chunks preserving code blocks.
+  - `verifier.py`: Ensures code blocks are verbatim, turn coverage is complete, and no secrets leak into output.
+  - `llm_client.py`: OpenAI-compatible HTTP client with deterministic caching in `.distill_cache/`.
+
+- **`utils/drive/` (Google Drive OAuth & Fetching):**
+  - `auth.py`: OAuth2 token retrieval and auto-refresh using environment variables (`GDRIVE_REFRESH_TOKEN`, etc.) or `.gdrive_token.json`.
+  - `client.py`: `GoogleDriveChatFetcher` for searching the "Google AI Studio" folder and downloading chat files by name.
 
 - **`utils/reconstruction/` (Code Generation):**
   - `gemini_code_reconstructor.py`: Implements `GeminiAPICodeReconstructor`. Reconstructs runnable Python scripts targeting Google GenAI SDK using templates in `templates/` (e.g. `gemini_studio_vanilla.py.tpl`).
@@ -116,4 +137,4 @@ The repository parses Google AI Studio chat session exports, converts them into 
   - `schema_transformer.py`: Standalone CLI & converter between OpenAI JSON Schema, Gemini SchemaData, and Python `google.genai.types.Schema` code.
 
 - **`utils/cli_v3.py` (Unified CLI):**
-  - Orchestrates parser, reconstructor, Studio JSON modifier, and logging subcommands. Handles path normalization across Windows and Linux.
+  - Orchestrates parser, reconstructor, Studio JSON modifier, distillation, and logging subcommands. Handles path normalization across Windows and Linux.

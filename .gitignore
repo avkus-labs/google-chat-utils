@@ -45,7 +45,7 @@ coverage.xml
 *.log
 .pytest_cache/
 
-# Environments
+# Environments & secrets
 .env
 .venv
 venv/
@@ -53,6 +53,9 @@ ENV/
 env/
 env.bak/
 venv.bak/
+.gdrive_token.json
+client_secret*.json
+.distill_cache/
 
 # OS-specific
 .DS_Store

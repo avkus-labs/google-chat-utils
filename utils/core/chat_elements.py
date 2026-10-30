@@ -1,4 +1,4 @@
-from typing import List, Dict, Any, Optional, Union
+from typing import List, Dict, Any, Optional
 from abc import ABC, abstractmethod
 from utils.core.schema_elements import SchemaData, FunctionDefinition
 
@@ -335,7 +335,7 @@ class IntermediateChatData:
 
     @staticmethod
     def from_dict(data: dict):
-        from utils.core.schema_elements import FunctionDefinition, SchemaData
+        from utils.core.schema_elements import FunctionDefinition
         def part_from_dict(part_dict):
             t = part_dict.get('type')
             if t == 'TextPart':

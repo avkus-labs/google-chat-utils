@@ -10,7 +10,6 @@ python utils/studio_json_modifier.py --input_studio_json data/Example --output_s
 """
 import argparse
 import json
-import os
 from typing import Optional, Dict, Any, List
 
 def load_text_file(path: Optional[str]) -> Optional[str]:

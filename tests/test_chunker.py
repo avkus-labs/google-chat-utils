@@ -1,6 +1,5 @@
 """Tests for chunker: turn boundaries, code-block safety, numbering."""
 
-import pytest
 from utils.distillation import chunker
 
 
