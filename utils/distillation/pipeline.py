@@ -36,6 +36,7 @@ class DistillError(Exception):
 class DistillConfig:
     llm_base_url: str = ""
     llm_model: str = ""
+    llm_synthesis_model: str = ""
     llm_api_key_env: str = "DISTILL_API_KEY"
     prompt_dir: str = "prompts"
     chunk_tokens: int = 30000
@@ -47,6 +48,15 @@ class DistillConfig:
     overwrite: bool = False                 # --distill_overwrite: allow overwriting existing _distilled.md
     output_dir: Optional[str] = None        # None = next to input file
     log: callable = print
+
+    @property
+    def synthesis_model(self) -> str:
+        return self.llm_synthesis_model or self.llm_model
+
+
+def synthesis_model(cfg: DistillConfig) -> str:
+    """Return synthesis model for cfg: cfg.llm_synthesis_model or cfg.llm_model."""
+    return cfg.synthesis_model
 
 
 @dataclass
@@ -146,6 +156,7 @@ def distill_human_markdown(input_path: str, cfg: DistillConfig) -> Optional[str]
             f"{cfg.max_total_input_tokens} токенов — отказ.")
 
     log(plan_line(input_path, prep))
+    log(f"  модели: чанки={cfg.llm_model}, synthesis={cfg.synthesis_model}")
     if prep.redaction_counts:
         log(f"  редакция секретов: {prep.redaction_counts}")
 
@@ -184,13 +195,13 @@ def distill_human_markdown(input_path: str, cfg: DistillConfig) -> Optional[str]
 
     merged = "\n\n".join(chunk_results)
     synth_prompt = synth_tpl + "\n\n<distilled_text>\n" + merged + "\n</distilled_text>"
-    synth_key = cache_key(merged, synth_tpl, cfg.llm_model, cfg.llm_base_url)
+    synth_key = cache_key(merged, synth_tpl, cfg.synthesis_model, cfg.llm_base_url)
     meta_json = cache.get(synth_key)
     if meta_json is None:
         log("  synthesis: вызов LLM...")
         try:
             meta_json = chat_completion(
-                cfg.llm_base_url, cfg.llm_model, synth_prompt, api_key)
+                cfg.llm_base_url, cfg.synthesis_model, synth_prompt, api_key)
         except LLMFatalError as e:
             raise DistillError(f"Ошибка LLM на synthesis: {e}", exit_code=1)
         cache.put(synth_key, meta_json)
@@ -250,7 +261,7 @@ def _parse_json_with_retry(raw: str, cfg: DistillConfig) -> Dict:
         "JSON-объект без пояснений.\nИсходный ответ:\n" + raw)
     try:
         retried = chat_completion(
-            cfg.llm_base_url, cfg.llm_model, retry_prompt, api_key)
+            cfg.llm_base_url, cfg.synthesis_model, retry_prompt, api_key)
     except (LLMFatalError, ChunkFailedError) as e:
         raise DistillError(f"Synthesis: повторный вызов не удался: {e}", exit_code=1)
     data = attempt(retried)
@@ -283,6 +294,8 @@ def _frontmatter_only(meta, input_path, prep, cfg) -> str:
         "source_sha256": prep.source_hash,
         "chunks": len(prep.chunks),
     }
+    if cfg.synthesis_model != cfg.llm_model:
+        fm["synthesis_model"] = cfg.synthesis_model
     return _to_yaml(fm)
 
 
@@ -313,13 +326,17 @@ def render_distilled(meta, body, verification, input_path, prep, cfg) -> str:
         "generated:",
         f"  by: {json.dumps(cfg.llm_model, ensure_ascii=False)}",
         f"  at: {json.dumps(now)}",
+    ]
+    if cfg.synthesis_model != cfg.llm_model:
+        fm_lines.append(f"synthesis_model: {json.dumps(cfg.synthesis_model, ensure_ascii=False)}")
+    fm_lines.extend([
         f"original_source: {json.dumps(os.path.basename(input_path), ensure_ascii=False)}",
         f"source_sha256: {prep.source_hash}",
         f"chunks: {len(prep.chunks)}",
         f"description: {json.dumps(meta.get('summary', ''), ensure_ascii=False)}",
         f"resolution: {json.dumps(meta.get('resolution', ''), ensure_ascii=False)}",
         "keywords:",
-    ]
+    ])
     for k in meta.get("keywords", []):
         fm_lines.append(f"  - {json.dumps(str(k), ensure_ascii=False)}")
     fm_lines.append("tags:")

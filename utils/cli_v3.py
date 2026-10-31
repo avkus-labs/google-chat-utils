@@ -313,6 +313,8 @@ def _add_distill_options(p):
                    help="Base URL OpenAI-совместимого API. Обязателен при дистилляции, дефолтов нет.")
     p.add_argument("--llm_model", default="",
                    help="Имя модели. Обязательно при дистилляции, дефолтов нет.")
+    p.add_argument("--llm_synthesis_model", default="",
+                   help="Модель для synthesis (по умолчанию та же, что --llm_model).")
     p.add_argument("--llm_api_key_env", default="DISTILL_API_KEY",
                    help="Имя переменной окружения с ключом (по умолчанию DISTILL_API_KEY).")
     p.add_argument("--distill_prompt_dir", default="prompts",
@@ -334,6 +336,7 @@ def build_distill_config(args, output_dir=None):
     cfg = distill_pipeline.DistillConfig()
     cfg.llm_base_url = args.llm_base_url
     cfg.llm_model = args.llm_model
+    cfg.llm_synthesis_model = getattr(args, "llm_synthesis_model", "") or ""
     cfg.llm_api_key_env = args.llm_api_key_env
     cfg.prompt_dir = args.distill_prompt_dir
     cfg.chunk_tokens = args.chunk_tokens
@@ -397,6 +400,7 @@ def run_distill_batch(human_files, args, output_dir=None):
         return
 
     print(f"{BOLD}План дистилляции:{RESET}")
+    print(f"  модели: чанки={cfg.llm_model}, synthesis={cfg.synthesis_model}")
     total_tokens = 0
     for path, prep in preps:
         out_path = _distilled_path_for(path, output_dir)

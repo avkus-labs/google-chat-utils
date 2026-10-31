@@ -184,9 +184,9 @@ class TestCLIOptionsAndInteractive:
         mock_handler = MagicMock()
         handlers = {"distill": mock_handler}
 
-        # Inputs: is_dir (n), input_file (Enter), llm_base_url (Enter), llm_model (Enter),
+        # Inputs: is_dir (n), input_file (Enter), llm_base_url, llm_model, llm_synthesis_model (Enter),
         # dry_run (n), distill_overwrite (y)
-        with patch("builtins.input", side_effect=["n", "", "", "", "n", "y"]):
+        with patch("builtins.input", side_effect=["n", "", "http://localhost:11434/v1", "test-model", "", "n", "y"]):
             interactive_distill(handlers)
 
         mock_handler.assert_called_once()
@@ -199,8 +199,8 @@ class TestCLIOptionsAndInteractive:
         handlers = {"parse": mock_handler}
 
         # Inputs: is_dir (n), input_file (Enter), output_prefix (Enter), log_to_memory (n),
-        # distill (y), distill_overwrite (y), llm_base_url (Enter), llm_model (Enter)
-        with patch("builtins.input", side_effect=["n", "", "", "n", "y", "y", "", ""]):
+        # distill (y), distill_overwrite (y), llm_base_url, llm_model, llm_synthesis_model (Enter)
+        with patch("builtins.input", side_effect=["n", "", "", "n", "y", "y", "http://localhost:11434/v1", "test-model", ""]):
             interactive_parse(handlers)
 
         mock_handler.assert_called_once()

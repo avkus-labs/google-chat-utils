@@ -76,6 +76,9 @@ All commands can be run directly from the repository root:
 
   # Force regenerate existing _distilled.md
   python utils/cli_v3.py distill --input_file output_data/Example/Example_human.md --distill_overwrite --llm_base_url "<url>" --llm_model "<model>" --yes
+
+  # Distill with separate models for chunks and synthesis
+  python utils/cli_v3.py distill --input_file output_data/Example/Example_human.md --llm_base_url "<url>" --llm_model gemini-3.1-flash-lite --llm_synthesis_model <более сильная> --yes
   ```
 
 - **Reconstruct Python Code:**

@@ -21,7 +21,8 @@
     *   **Скачивание чатов по имени:** Команда `fetch-drive` ищет файл в папке "Google AI Studio" и сохраняет его локально.
     *   **Сквозной пайплайн:** Флаг `--parse` автоматически запускает парсинг сразу после скачивания (`fetch-drive --parse --distill`).
     *   **OAuth2 авторизация:** Интерактивная команда `auth-drive` и поддержка `.env` (`GDRIVE_REFRESH_TOKEN`).
-*   **Дистилляция чатов (v0.5.0, v0.7.1):**
+*   **Дистилляция чатов (v0.5.0, v0.7.1, v0.7.2):**
+    *   **Отдельная модель для synthesis (v0.7.2):** флаг `--llm_synthesis_model` позволяет направить финальный шаг структурирования и формирования JSON на более сильную модель, а чанки обрабатывать на быстрой/дешёвой `--llm_model`.
     *   **Инкрементальная обработка (v0.7.1):** готовые `_distilled.md` пропускаются по умолчанию, не тратя токены LLM; принудительная перегенерация — флагом `--distill_overwrite`.
     *   **Атомарная запись:** запись через временный файл `.tmp` + `os.replace` защищает существующие файлы от повреждения при сбоях.
     *   **Подпапки вывода:** `parse` складывает артефакты каждого файла в `<output_prefix>/<safe_stem>/`.
@@ -137,6 +138,10 @@
 *   **Принудительная перегенерация (`--distill_overwrite`):**
     ```bash
     python utils/cli_v3.py distill --input_dir output_data --distill_overwrite --llm_base_url "http://..." --llm_model "model" --yes
+    ```
+*   **Раздельные модели для чанков и synthesis (`--llm_synthesis_model`):**
+    ```bash
+    python utils/cli_v3.py distill --input_file output_data/Example/Example_human.md --llm_base_url "http://..." --llm_model gemini-3.1-flash-lite --llm_synthesis_model <более сильная> --yes
     ```
 
 ### 4. Отправка лога в Memory Compiler (`log`)

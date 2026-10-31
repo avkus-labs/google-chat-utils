@@ -88,11 +88,19 @@ def interactive_parse(handlers: Dict[str, Callable[[Any], None]]):
 
     llm_base_url = None
     llm_model = None
+    llm_synthesis_model = ""
     distill_overwrite = False
     if distill:
         distill_overwrite = prompt_bool("Перезаписать уже готовые _distilled.md?", default=False)
-        llm_base_url = prompt_input("LLM Base URL", default=os.getenv("DISTILLER_BASE_URL", "http://localhost:11434/v1"))
-        llm_model = prompt_input("LLM Model", default=os.getenv("DISTILLER_MODEL", "qwen2.5:14b"))
+        llm_base_url = prompt_input("LLM Base URL", default=os.getenv("DISTILL_BASE_URL") or os.getenv("DISTILLER_BASE_URL", ""))
+        llm_model = prompt_input("LLM Model", default=os.getenv("DISTILL_MODEL") or os.getenv("DISTILLER_MODEL", ""))
+        if not llm_base_url or not llm_model:
+            print(f"{RED}Ошибка: --distill требует явных --llm_base_url и --llm_model (без дефолтов и автодетекта).{RESET}")
+            return
+        llm_synthesis_model = prompt_input(
+            "Модель для synthesis (Enter = та же)",
+            default=os.getenv("DISTILL_SYNTHESIS_MODEL") or os.getenv("DISTILLER_SYNTHESIS_MODEL", "")
+        )
 
     args = argparse.Namespace(
         input_file=input_file,
@@ -103,6 +111,7 @@ def interactive_parse(handlers: Dict[str, Callable[[Any], None]]):
         distill_overwrite=distill_overwrite,
         llm_base_url=llm_base_url,
         llm_model=llm_model,
+        llm_synthesis_model=llm_synthesis_model,
         distill_preset=None,
         distill_concurrency=None,
         distill_retries=None,
@@ -169,8 +178,15 @@ def interactive_distill(handlers: Dict[str, Callable[[Any], None]]):
         input_file = prompt_input("Путь к файлу _human.md", default="output_data/Example/Example_human.md")
         input_dir = None
 
-    llm_base_url = prompt_input("LLM Base URL", default=os.getenv("DISTILLER_BASE_URL", "http://localhost:11434/v1"))
-    llm_model = prompt_input("LLM Model", default=os.getenv("DISTILLER_MODEL", "qwen2.5:14b"))
+    llm_base_url = prompt_input("LLM Base URL", default=os.getenv("DISTILL_BASE_URL") or os.getenv("DISTILLER_BASE_URL", ""))
+    llm_model = prompt_input("LLM Model", default=os.getenv("DISTILL_MODEL") or os.getenv("DISTILLER_MODEL", ""))
+    if not llm_base_url or not llm_model:
+        print(f"{RED}Ошибка: команда distill требует явных --llm_base_url и --llm_model (без дефолтов).{RESET}")
+        return
+    llm_synthesis_model = prompt_input(
+        "Модель для synthesis (Enter = та же)",
+        default=os.getenv("DISTILL_SYNTHESIS_MODEL") or os.getenv("DISTILLER_SYNTHESIS_MODEL", "")
+    )
     dry_run = prompt_bool("Dry run (без реальных вызовов LLM)?", default=False)
     distill_overwrite = prompt_bool("Перезаписать уже готовые _distilled.md?", default=False)
 
@@ -180,6 +196,7 @@ def interactive_distill(handlers: Dict[str, Callable[[Any], None]]):
         output_dir=None,
         llm_base_url=llm_base_url,
         llm_model=llm_model,
+        llm_synthesis_model=llm_synthesis_model,
         distill_overwrite=distill_overwrite,
         distill_preset=None,
         distill_concurrency=None,
@@ -209,6 +226,7 @@ def interactive_fetch_drive(handlers: Dict[str, Callable[[Any], None]]):
         distill=False,
         llm_base_url=None,
         llm_model=None,
+        llm_synthesis_model="",
         distill_preset=None,
         distill_concurrency=None,
         distill_retries=None,
