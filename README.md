@@ -21,7 +21,8 @@
     *   **Скачивание чатов по имени:** Команда `fetch-drive` ищет файл в папке "Google AI Studio" и сохраняет его локально.
     *   **Сквозной пайплайн:** Флаг `--parse` автоматически запускает парсинг сразу после скачивания (`fetch-drive --parse --distill`).
     *   **OAuth2 авторизация:** Интерактивная команда `auth-drive` и поддержка `.env` (`GDRIVE_REFRESH_TOKEN`).
-*   **Дистилляция чатов (v0.5.0, v0.7.1, v0.7.2):**
+*   **Дистилляция чатов (v0.5.0, v0.7.1, v0.7.2, v0.7.3):**
+    *   **Стриминг ответов (SSE, v0.7.3):** по умолчанию все запросы к LLM стримятся (`stream: true`). Первые байты приходят без ожидания полной генерации, предотвращая таймауты промежуточных шлюзов и балансировщиков (OmniRoute). Отключение стриминга — флагом `--llm_no_stream`.
     *   **Отдельная модель для synthesis (v0.7.2):** флаг `--llm_synthesis_model` позволяет направить финальный шаг структурирования и формирования JSON на более сильную модель, а чанки обрабатывать на быстрой/дешёвой `--llm_model`.
     *   **Инкрементальная обработка (v0.7.1):** готовые `_distilled.md` пропускаются по умолчанию, не тратя токены LLM; принудительная перегенерация — флагом `--distill_overwrite`.
     *   **Атомарная запись:** запись через временный файл `.tmp` + `os.replace` защищает существующие файлы от повреждения при сбоях.
@@ -143,6 +144,19 @@
     ```bash
     python utils/cli_v3.py distill --input_file output_data/Example/Example_human.md --llm_base_url "http://..." --llm_model gemini-3.1-flash-lite --llm_synthesis_model <более сильная> --yes
     ```
+*   **Отключение стриминга (`--llm_no_stream`):**
+    ```bash
+    python utils/cli_v3.py distill --input_file output_data/Example/Example_human.md --llm_no_stream --llm_base_url "http://..." --llm_model "model" --yes
+    ```
+
+#### Почему стрим (SSE)?
+
+По умолчанию клиент отправляет запросы в режиме стриминга (`stream: true`), читая Server-Sent Events (SSE). Без стриминга клиент ждёт полной генерации ответа, из-за чего промежуточные прокси и роутеры (в частности, OmniRoute) обрывают соединение по внутренним таймаутам ожидания заголовков:
+1. `[504] ... requestQueue.maxWaitMs=15000ms` (переменная `RATE_LIMIT_MAX_WAIT_MS`, дефолт 15000 мс; в веб-панели OmniRoute: Settings → Resilience → «Max queue wait»);
+2. `[504] Direct response did not start within 30000ms — retrying on a fresh socket` (переменная `OMNIROUTE_DIRECT_HEADERS_TIMEOUT_MS`, дефолт 30000 мс; `open-sse/utils/directResponseStartTimeout.ts`);
+3. После обрыва шлюз повторяет запрос на резервном аккаунте, в то время как первый запрос ещё генерируется провайдером → `409 duplicate request` (например, у xkiro).
+
+При активном стриминге первые байты (включая ранний keep-alive от роутера) поступают незамедлительно, предотвращая срабатывание обоих таймаутов. Если вы явно отключаете стриминг флагом `--llm_no_stream`, убедитесь, что в OmniRoute увеличены значения `RATE_LIMIT_MAX_WAIT_MS` и `OMNIROUTE_DIRECT_HEADERS_TIMEOUT_MS`.
 
 ### 4. Отправка лога в Memory Compiler (`log`)
 

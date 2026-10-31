@@ -6,10 +6,13 @@ are always passed explicitly (task 001 decision).
 
 import hashlib
 import json
+import logging
 import os
 import time
 
 import httpx
+
+logger = logging.getLogger(__name__)
 
 RETRYABLE_STATUS = {429, 500, 502, 503, 504}
 MAX_RETRIES = 2  # up to 2 retries after the first attempt
@@ -62,39 +65,121 @@ class DistillCache:
 
 
 def chat_completion(base_url: str, model: str, prompt: str,
-                    api_key: str = "", timeout: float = 600.0) -> str:
+                    api_key: str = "", timeout: float = 600.0,
+                    stream: bool = True) -> str:
     """POST {base_url}/chat/completions and return the message content.
 
     - 429/5xx: up to 2 retries with exponential backoff.
     - other 4xx: stop immediately (LLMFatalError).
     - finish_reason != 'stop': chunk is failed (ChunkFailedError).
+    - stream=True: uses SSE streaming (httpx.stream). The timeout parameter
+      sets the read pause between incoming bytes/chunks (via httpx.Timeout(timeout, connect=30.0)),
+      not the overall duration of the entire request.
+    - stream=False: falls back to standard non-streaming httpx.post.
     """
     url = base_url.rstrip("/") + "/chat/completions"
     payload = {"model": model, "messages": [{"role": "user", "content": prompt}]}
     headers = {"Authorization": f"Bearer {api_key}"} if api_key else {}
 
     for attempt in range(MAX_RETRIES + 1):
+        if not stream:
+            try:
+                resp = httpx.post(url, json=payload, headers=headers, timeout=timeout)
+            except httpx.HTTPError as e:
+                if attempt < MAX_RETRIES:
+                    time.sleep(2 ** attempt)
+                    continue
+                raise LLMFatalError(f"Network error after retries: {e}")
+
+            if resp.status_code in RETRYABLE_STATUS:
+                if attempt < MAX_RETRIES:
+                    time.sleep(2 ** attempt)
+                    continue
+                raise LLMFatalError(f"HTTP {resp.status_code} after retries")
+            if resp.status_code >= 400:
+                raise LLMFatalError(f"HTTP {resp.status_code}: {resp.text[:200]}")
+
+            data = resp.json()
+            choice = data["choices"][0]
+            if choice.get("finish_reason") != "stop":
+                raise ChunkFailedError(
+                    f"finish_reason={choice.get('finish_reason')!r}")
+            return choice["message"]["content"]
+
+        # Streaming mode (stream=True)
+        collected_content = []
+        last_finish_reason = None
         try:
-            resp = httpx.post(url, json=payload, headers=headers, timeout=timeout)
+            with httpx.stream(
+                "POST",
+                url,
+                json={**payload, "stream": True},
+                headers=headers,
+                timeout=httpx.Timeout(timeout, connect=30.0),
+            ) as resp:
+                if resp.status_code in RETRYABLE_STATUS:
+                    retry_status = resp.status_code
+                elif resp.status_code >= 400:
+                    body = resp.read().decode("utf-8", errors="replace")
+                    raise LLMFatalError(f"HTTP {resp.status_code}: {body[:200]}")
+                else:
+                    retry_status = None
+                    for line in resp.iter_lines():
+                        line = line.strip()
+                        if not line or line.startswith(":"):
+                            continue
+                        if not line.startswith("data:"):
+                            continue
+                        data_str = line[len("data:"):].strip()
+                        if data_str == "[DONE]":
+                            break
+                        try:
+                            event = json.loads(data_str)
+                        except Exception:
+                            logger.debug("Unrecognized JSON in SSE keep-alive: %r", data_str)
+                            continue
+
+                        if isinstance(event, dict) and "error" in event:
+                            raise httpx.HTTPError(f"Stream error event: {event['error']}")
+
+                        if not isinstance(event, dict):
+                            continue
+
+                        choices = event.get("choices")
+                        if not choices or not isinstance(choices, list) or len(choices) == 0:
+                            continue
+
+                        choice0 = choices[0]
+                        if not isinstance(choice0, dict):
+                            continue
+
+                        fr = choice0.get("finish_reason")
+                        if fr is not None:
+                            last_finish_reason = fr
+
+                        delta = choice0.get("delta")
+                        if isinstance(delta, dict):
+                            content_piece = delta.get("content")
+                            if content_piece:
+                                collected_content.append(content_piece)
+
+            if retry_status is not None:
+                if attempt < MAX_RETRIES:
+                    time.sleep(2 ** attempt)
+                    continue
+                raise LLMFatalError(f"HTTP {retry_status} after retries")
+
+            if last_finish_reason is None:
+                raise httpx.HTTPError("Stream closed without finish_reason")
+
         except httpx.HTTPError as e:
             if attempt < MAX_RETRIES:
                 time.sleep(2 ** attempt)
                 continue
             raise LLMFatalError(f"Network error after retries: {e}")
 
-        if resp.status_code in RETRYABLE_STATUS:
-            if attempt < MAX_RETRIES:
-                time.sleep(2 ** attempt)
-                continue
-            raise LLMFatalError(f"HTTP {resp.status_code} after retries")
-        if resp.status_code >= 400:
-            raise LLMFatalError(f"HTTP {resp.status_code}: {resp.text[:200]}")
-
-        data = resp.json()
-        choice = data["choices"][0]
-        if choice.get("finish_reason") != "stop":
-            raise ChunkFailedError(
-                f"finish_reason={choice.get('finish_reason')!r}")
-        return choice["message"]["content"]
+        if last_finish_reason != "stop":
+            raise ChunkFailedError(f"finish_reason={last_finish_reason!r}")
+        return "".join(collected_content)
 
     raise LLMFatalError("unreachable")

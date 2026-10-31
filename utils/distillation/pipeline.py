@@ -47,6 +47,7 @@ class DistillConfig:
     assume_yes: bool = False
     overwrite: bool = False                 # --distill_overwrite: allow overwriting existing _distilled.md
     output_dir: Optional[str] = None        # None = next to input file
+    llm_stream: bool = True                 # stream LLM responses (disable via --llm_no_stream)
     log: callable = print
 
     @property
@@ -185,7 +186,7 @@ def distill_human_markdown(input_path: str, cfg: DistillConfig) -> Optional[str]
         log(f"  чанк {i}/{len(prep.chunks)}: вызов LLM...")
         try:
             content = chat_completion(
-                cfg.llm_base_url, cfg.llm_model, prompt, api_key)
+                cfg.llm_base_url, cfg.llm_model, prompt, api_key, stream=cfg.llm_stream)
         except ChunkFailedError as e:
             raise DistillError(f"Чанк {i} провален ({e}), частичный результат не пишется.")
         except LLMFatalError as e:
@@ -201,7 +202,7 @@ def distill_human_markdown(input_path: str, cfg: DistillConfig) -> Optional[str]
         log("  synthesis: вызов LLM...")
         try:
             meta_json = chat_completion(
-                cfg.llm_base_url, cfg.synthesis_model, synth_prompt, api_key)
+                cfg.llm_base_url, cfg.synthesis_model, synth_prompt, api_key, stream=cfg.llm_stream)
         except LLMFatalError as e:
             raise DistillError(f"Ошибка LLM на synthesis: {e}", exit_code=1)
         cache.put(synth_key, meta_json)
@@ -261,7 +262,7 @@ def _parse_json_with_retry(raw: str, cfg: DistillConfig) -> Dict:
         "JSON-объект без пояснений.\nИсходный ответ:\n" + raw)
     try:
         retried = chat_completion(
-            cfg.llm_base_url, cfg.synthesis_model, retry_prompt, api_key)
+            cfg.llm_base_url, cfg.synthesis_model, retry_prompt, api_key, stream=cfg.llm_stream)
     except (LLMFatalError, ChunkFailedError) as e:
         raise DistillError(f"Synthesis: повторный вызов не удался: {e}", exit_code=1)
     data = attempt(retried)

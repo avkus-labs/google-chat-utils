@@ -79,6 +79,9 @@ All commands can be run directly from the repository root:
 
   # Distill with separate models for chunks and synthesis
   python utils/cli_v3.py distill --input_file output_data/Example/Example_human.md --llm_base_url "<url>" --llm_model gemini-3.1-flash-lite --llm_synthesis_model <более сильная> --yes
+
+  # Distill with streaming disabled (blocking mode)
+  python utils/cli_v3.py distill --input_file output_data/Example/Example_human.md --llm_no_stream --llm_base_url "<url>" --llm_model "<model>" --yes
   ```
 
 - **Reconstruct Python Code:**
@@ -141,7 +144,7 @@ The repository parses Google AI Studio chat session exports, converts them into 
   - `redactor.py`: Redacts 11 patterns of sensitive tokens/keys before LLM invocation.
   - `chunker.py`: Splits large dialogs into turn-aligned chunks preserving code blocks.
   - `verifier.py`: Ensures code blocks are verbatim, turn coverage is complete, and no secrets leak into output.
-  - `llm_client.py`: OpenAI-compatible HTTP client with deterministic caching in `.distill_cache/`.
+  - `llm_client.py`: OpenAI-compatible HTTP client with SSE streaming (`httpx.stream`) by default, `--llm_no_stream` fallback, and deterministic caching in `.distill_cache/`.
 
 - **`utils/drive/` (Google Drive OAuth & Fetching):**
   - `auth.py`: OAuth2 token retrieval and auto-refresh using environment variables (`GDRIVE_REFRESH_TOKEN`, etc.) or `.gdrive_token.json`.

@@ -1,6 +1,6 @@
 [project]
 name = "google-chat-utils"
-version = "0.7.2"
+version = "0.7.3"
 description = "A powerful and flexible toolkit for parsing Google AI Studio chats, representing them as objects, generating Markdown for RAG, and reconstructing Python code for the Gemini API."
 requires-python = ">=3.9"
 dependencies = [
@@ -12,6 +12,7 @@ dependencies = [
     "google-auth-oauthlib",
     "google-auth-httplib2",
     "pydantic>=2.0.0",
+    "python-dotenv>=1.0.0",
 ]
 
 [tool.ruff]

@@ -1,6 +1,7 @@
 """Tests for LLM client and cache (httpx mocked, no network)."""
 
 from unittest.mock import patch, MagicMock
+import httpx
 import pytest
 
 from utils.distillation.llm_client import (
@@ -23,11 +24,33 @@ def _ok_response(content="answer"):
     })
 
 
+class MockStreamResponse:
+    def __init__(self, status_code=200, lines=None, text=""):
+        self.status_code = status_code
+        self.lines = lines or []
+        self._text = text
+
+    def iter_lines(self):
+        for line in self.lines:
+            if isinstance(line, Exception):
+                raise line
+            yield line
+
+    def read(self):
+        return self._text.encode("utf-8")
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        pass
+
+
 class TestChatCompletion:
     @patch("utils.distillation.llm_client.httpx.post")
     def test_success(self, mock_post):
         mock_post.return_value = _ok_response("привет")
-        out = chat_completion("http://x/v1", "m", "prompt", "key")
+        out = chat_completion("http://x/v1", "m", "prompt", "key", stream=False)
         assert out == "привет"
         args, kwargs = mock_post.call_args
         assert kwargs["json"]["model"] == "m"
@@ -36,14 +59,14 @@ class TestChatCompletion:
     @patch("utils.distillation.llm_client.httpx.post")
     def test_url_construction(self, mock_post):
         mock_post.return_value = _ok_response()
-        chat_completion("http://x/v1/", "m", "p")
+        chat_completion("http://x/v1/", "m", "p", stream=False)
         assert mock_post.call_args[0][0] == "http://x/v1/chat/completions"
 
     @patch("utils.distillation.llm_client.time.sleep")
     @patch("utils.distillation.llm_client.httpx.post")
     def test_retry_on_429_then_success(self, mock_post, mock_sleep):
         mock_post.side_effect = [_mock_response(429), _ok_response("ok")]
-        out = chat_completion("http://x", "m", "p")
+        out = chat_completion("http://x", "m", "p", stream=False)
         assert out == "ok"
         assert mock_post.call_count == 2
 
@@ -52,7 +75,7 @@ class TestChatCompletion:
     def test_429_exhausted(self, mock_post, mock_sleep):
         mock_post.return_value = _mock_response(429)
         with pytest.raises(LLMFatalError):
-            chat_completion("http://x", "m", "p")
+            chat_completion("http://x", "m", "p", stream=False)
         assert mock_post.call_count == 3  # 1 + 2 retries
 
     @patch("utils.distillation.llm_client.time.sleep")
@@ -60,7 +83,7 @@ class TestChatCompletion:
     def test_401_stops_immediately(self, mock_post, mock_sleep):
         mock_post.return_value = _mock_response(401, text="bad key")
         with pytest.raises(LLMFatalError):
-            chat_completion("http://x", "m", "p")
+            chat_completion("http://x", "m", "p", stream=False)
         assert mock_post.call_count == 1
 
     @patch("utils.distillation.llm_client.httpx.post")
@@ -70,7 +93,139 @@ class TestChatCompletion:
                          "message": {"content": "truncated"}}]
         })
         with pytest.raises(ChunkFailedError):
+            chat_completion("http://x", "m", "p", stream=False)
+
+
+class TestChatCompletionStream:
+    @patch("utils.distillation.llm_client.httpx.stream")
+    def test_stream_success_assembly(self, mock_stream):
+        lines = [
+            ": keep-alive comment",
+            "",
+            "event: ping",
+            "data: not-a-json",
+            'data: {"choices": []}',
+            'data: {"choices": [{"delta": {"reasoning_content": "thinking..."}, "finish_reason": null}]}',
+            'data: {"choices": [{"delta": {"content": "Привет, "}, "finish_reason": null}]}',
+            ": another comment",
+            'data: {"choices": [{"delta": {"content": "мир!"}, "finish_reason": null}]}',
+            'data: {"choices": [{"delta": {}, "finish_reason": "stop"}]}',
+            "data: [DONE]",
+        ]
+        mock_stream.return_value = MockStreamResponse(200, lines=lines)
+        out = chat_completion("http://x/v1", "m", "prompt", "key")
+        assert out == "Привет, мир!"
+        args, kwargs = mock_stream.call_args
+        assert args[0] == "POST"
+        assert args[1] == "http://x/v1/chat/completions"
+        assert kwargs["json"]["stream"] is True
+        assert kwargs["json"]["model"] == "m"
+        assert kwargs["headers"]["Authorization"] == "Bearer key"
+        assert kwargs["timeout"].connect == 30.0
+        assert kwargs["timeout"].read == 600.0
+
+    @patch("utils.distillation.llm_client.httpx.stream")
+    def test_finish_reason_length_fails_chunk(self, mock_stream):
+        lines = [
+            'data: {"choices": [{"delta": {"content": "truncated"}, "finish_reason": "length"}]}',
+            "data: [DONE]",
+        ]
+        mock_stream.return_value = MockStreamResponse(200, lines=lines)
+        with pytest.raises(ChunkFailedError):
             chat_completion("http://x", "m", "p")
+
+    @patch("utils.distillation.llm_client.time.sleep")
+    @patch("utils.distillation.llm_client.httpx.stream")
+    def test_retry_on_429_then_success(self, mock_stream, mock_sleep):
+        ok_lines = [
+            'data: {"choices": [{"delta": {"content": "ok"}, "finish_reason": "stop"}]}',
+            "data: [DONE]",
+        ]
+        mock_stream.side_effect = [
+            MockStreamResponse(429),
+            MockStreamResponse(200, lines=ok_lines),
+        ]
+        out = chat_completion("http://x", "m", "p")
+        assert out == "ok"
+        assert mock_stream.call_count == 2
+        mock_sleep.assert_called_once_with(1)
+
+    @patch("utils.distillation.llm_client.time.sleep")
+    @patch("utils.distillation.llm_client.httpx.stream")
+    def test_429_exhausted(self, mock_stream, mock_sleep):
+        mock_stream.return_value = MockStreamResponse(429)
+        with pytest.raises(LLMFatalError, match="HTTP 429 after retries"):
+            chat_completion("http://x", "m", "p")
+        assert mock_stream.call_count == 3  # 1 + 2 retries
+
+    @patch("utils.distillation.llm_client.time.sleep")
+    @patch("utils.distillation.llm_client.httpx.stream")
+    def test_401_stops_immediately(self, mock_stream, mock_sleep):
+        mock_stream.return_value = MockStreamResponse(401, text="bad api key")
+        with pytest.raises(LLMFatalError, match="HTTP 401: bad api key"):
+            chat_completion("http://x", "m", "p")
+        assert mock_stream.call_count == 1
+        mock_sleep.assert_not_called()
+
+    @patch("utils.distillation.llm_client.time.sleep")
+    @patch("utils.distillation.llm_client.httpx.stream")
+    def test_stream_closed_without_finish_reason_retries_and_fails(self, mock_stream, mock_sleep):
+        lines = [
+            'data: {"choices": [{"delta": {"content": "cutoff"}, "finish_reason": null}]}',
+        ]
+        mock_stream.return_value = MockStreamResponse(200, lines=lines)
+        with pytest.raises(LLMFatalError, match="Network error after retries"):
+            chat_completion("http://x", "m", "p")
+        assert mock_stream.call_count == 3
+
+    @patch("utils.distillation.llm_client.time.sleep")
+    @patch("utils.distillation.llm_client.httpx.stream")
+    def test_error_event_retries_and_succeeds(self, mock_stream, mock_sleep):
+        err_lines = [
+            'data: {"choices": [{"delta": {"content": "partial"}}, "finish_reason": null]}',
+            'data: {"error": {"message": "overloaded"}}',
+        ]
+        ok_lines = [
+            'data: {"choices": [{"delta": {"content": "clean answer"}, "finish_reason": "stop"}]}',
+            "data: [DONE]",
+        ]
+        mock_stream.side_effect = [
+            MockStreamResponse(200, lines=err_lines),
+            MockStreamResponse(200, lines=ok_lines),
+        ]
+        out = chat_completion("http://x", "m", "p")
+        assert out == "clean answer"
+        assert mock_stream.call_count == 2
+        mock_sleep.assert_called_once_with(1)
+
+    @patch("utils.distillation.llm_client.time.sleep")
+    @patch("utils.distillation.llm_client.httpx.stream")
+    def test_mid_stream_network_error_retries_and_discards_partial(self, mock_stream, mock_sleep):
+        bad_lines = [
+            'data: {"choices": [{"delta": {"content": "partial discarded"}, "finish_reason": null}]}',
+            httpx.ReadTimeout("connection dropped"),
+        ]
+        ok_lines = [
+            'data: {"choices": [{"delta": {"content": "final good text"}, "finish_reason": "stop"}]}',
+            "data: [DONE]",
+        ]
+        mock_stream.side_effect = [
+            MockStreamResponse(200, lines=bad_lines),
+            MockStreamResponse(200, lines=ok_lines),
+        ]
+        out = chat_completion("http://x", "m", "p")
+        assert out == "final good text"
+        assert mock_stream.call_count == 2
+
+    @patch("utils.distillation.llm_client.httpx.stream")
+    def test_empty_content_with_finish_reason_stop(self, mock_stream):
+        lines = [
+            'data: {"choices": [{"delta": {}, "finish_reason": "stop"}]}',
+            "data: [DONE]",
+        ]
+        mock_stream.return_value = MockStreamResponse(200, lines=lines)
+        out = chat_completion("http://x", "m", "p")
+        assert out == ""
 
 
 class TestCacheKey:

@@ -1,10 +1,12 @@
 """Tests for the shared distillation pipeline (no network)."""
 
+import argparse
 import os
 from unittest.mock import patch
 
 import pytest
 
+from utils.cli_v3 import _add_distill_options, build_distill_config
 from utils.distillation.pipeline import (
     DistillConfig, DistillError, distill_human_markdown, prepare,
     validate_turn_headers,
@@ -126,3 +128,49 @@ class TestDistill:
                    side_effect=["(ходы 1)", '{"title":"t","summary":"","keywords":[],"tags":[],"decisions_made":[],"lessons_learned":[],"topics_covered":[],"open_questions":[]}']) as mock_llm:
             distill_human_markdown(p, cfg(dry_run=False, chunk_tokens=50, max_chunks=1))
         assert mock_llm.call_count == 2  # 1 chunk + 1 synthesis
+
+    def test_pipeline_passes_llm_stream_true_by_default(self, tmp_path):
+        p = write_human(tmp_path)
+        with patch("utils.distillation.pipeline.chat_completion",
+                   side_effect=["chunk output", '{"title":"t","summary":"","keywords":[],"tags":[],"decisions_made":[],"lessons_learned":[],"topics_covered":[],"open_questions":[]}']) as mock_llm:
+            distill_human_markdown(p, cfg(dry_run=False))
+        assert mock_llm.call_count == 2
+        for call in mock_llm.call_args_list:
+            assert call.kwargs.get("stream") is True
+
+    def test_pipeline_passes_llm_stream_false_when_configured(self, tmp_path):
+        p = write_human(tmp_path)
+        with patch("utils.distillation.pipeline.chat_completion",
+                   side_effect=["chunk output", '{"title":"t","summary":"","keywords":[],"tags":[],"decisions_made":[],"lessons_learned":[],"topics_covered":[],"open_questions":[]}']) as mock_llm:
+            distill_human_markdown(p, cfg(dry_run=False, llm_stream=False))
+        assert mock_llm.call_count == 2
+        for call in mock_llm.call_args_list:
+            assert call.kwargs.get("stream") is False
+
+
+class TestCliStreamFlag:
+    def test_flags_parsing_in_all_commands(self):
+        for cmd_name in ["parse", "distill", "fetch-drive"]:
+            parser = argparse.ArgumentParser()
+            _add_distill_options(parser)
+            # Default without --llm_no_stream
+            parsed_def = parser.parse_args([])
+            assert parsed_def.llm_no_stream is False
+
+            # With --llm_no_stream
+            parsed_flag = parser.parse_args(["--llm_no_stream"])
+            assert parsed_flag.llm_no_stream is True
+
+    def test_build_distill_config_stream_mapping(self):
+        parser = argparse.ArgumentParser()
+        _add_distill_options(parser)
+
+        # Default: llm_stream is True
+        args_def = parser.parse_args([])
+        cfg_def = build_distill_config(args_def)
+        assert cfg_def.llm_stream is True
+
+        # With --llm_no_stream: llm_stream is False
+        args_no_stream = parser.parse_args(["--llm_no_stream"])
+        cfg_no_stream = build_distill_config(args_no_stream)
+        assert cfg_no_stream.llm_stream is False

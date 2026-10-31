@@ -66,7 +66,7 @@ def test_models_used_in_llm_calls_with_separate_synthesis_model(tmp_path):
 
     call_records = []
 
-    def fake_chat(base_url, model, prompt, api_key, timeout=120):
+    def fake_chat(base_url, model, prompt, api_key, timeout=120, *args, **kwargs):
         call_records.append({"model": model, "prompt": prompt})
         if "distilled_text" in prompt:
             return SYNTH_JSON_OK
@@ -95,7 +95,7 @@ def test_retry_invalid_json_uses_synthesis_model(tmp_path):
 
     models_called = []
 
-    def fake_chat(base_url, model, prompt, api_key, timeout=120):
+    def fake_chat(base_url, model, prompt, api_key, timeout=120, *args, **kwargs):
         models_called.append(model)
         if len(models_called) == 1:
             return "### Chunk summary (ходы 1–2)\nтекст"
@@ -125,7 +125,7 @@ def test_without_synthesis_flag_all_calls_use_chunk_model(tmp_path):
 
     models_called = []
 
-    def fake_chat(base_url, model, prompt, api_key, timeout=120):
+    def fake_chat(base_url, model, prompt, api_key, timeout=120, *args, **kwargs):
         models_called.append(model)
         if len(models_called) == 1:
             return "### Chunk summary (ходы 1–2)\nтекст"
@@ -158,7 +158,7 @@ def test_cache_invalidation_isolated_to_synthesis(tmp_path):
 
     calls_run1 = []
 
-    def fake_chat_1(base_url, model, prompt, api_key, timeout=120):
+    def fake_chat_1(base_url, model, prompt, api_key, timeout=120, *args, **kwargs):
         calls_run1.append((model, "synthesis" if "distilled_text" in prompt else "chunk"))
         if "distilled_text" in prompt:
             return SYNTH_JSON_OK
@@ -183,7 +183,7 @@ def test_cache_invalidation_isolated_to_synthesis(tmp_path):
 
     calls_run2 = []
 
-    def fake_chat_2(base_url, model, prompt, api_key, timeout=120):
+    def fake_chat_2(base_url, model, prompt, api_key, timeout=120, *args, **kwargs):
         calls_run2.append((model, "synthesis" if "distilled_text" in prompt else "chunk"))
         if "distilled_text" in prompt:
             return SYNTH_JSON_OK

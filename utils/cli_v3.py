@@ -4,6 +4,9 @@ import sys
 import json
 import subprocess
 
+from dotenv import load_dotenv
+load_dotenv()
+
 # === Определение корня проекта ===
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 if PROJECT_ROOT not in sys.path:
@@ -329,6 +332,8 @@ def _add_distill_options(p):
                    help="Что делать с Model Thoughts (по умолчанию drop).")
     p.add_argument("--distill_overwrite", action="store_true",
                    help="Перезаписать готовые _distilled.md. Без флага: готовые пропускаются, не ошибка.")
+    p.add_argument("--llm_no_stream", action="store_true",
+                   help="Отключить streaming (SSE) при запросах к LLM (по умолчанию стриминг включён).")
 
 
 def build_distill_config(args, output_dir=None):
@@ -346,6 +351,7 @@ def build_distill_config(args, output_dir=None):
     cfg.dry_run = args.distill_dry_run
     cfg.assume_yes = args.yes
     cfg.overwrite = getattr(args, "distill_overwrite", False)
+    cfg.llm_stream = not getattr(args, "llm_no_stream", False)
     cfg.output_dir = output_dir
     return cfg
 

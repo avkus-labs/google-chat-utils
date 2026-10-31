@@ -90,7 +90,7 @@ def run_interactive_auth(client_secrets_file: str = "client_secret.json", token_
     else:
         flow = InstalledAppFlow.from_client_secrets_file(client_secrets_file, SCOPES)
 
-    creds = flow.run_local_server(port=0)
+    creds = flow.run_local_server(port=8080)
 
     # Save credentials locally
     with open(token_path, "w", encoding="utf-8") as token_file:
