@@ -2,7 +2,7 @@
 type: task
 id: "007"
 slug: distill-si-only
-status: open
+status: completed
 executor: Antigravity
 repo: avkus-labs/google-chat-utils
 branch: feature/distill-si-only-007

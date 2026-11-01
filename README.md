@@ -153,6 +153,15 @@
     python utils/cli_v3.py distill --input_file output_data/Example/Example_human.md --distill_strict --llm_base_url "http://..." --llm_model "model" --yes
     ```
     В строгом режиме при пропуске хотя бы одного хода диалога или ошибках в якорях ходов дистилляция прерывается с ошибкой, а файл `_distilled.md` не записывается (кэш успешных чанков сохраняется для возможности продолжения).
+*   **Режим чатов «только System Instruction» (`--distill_si_only`):**
+    ```bash
+    # Режим документа (по умолчанию)
+    python utils/cli_v3.py distill --input_file output_data/BDX/BDX_human.md --distill_si_only document --llm_base_url "http://..." --llm_model "model" --yes
+
+    # Пропуск с ошибкой (прежнее поведение)
+    python utils/cli_v3.py distill --input_file output_data/BDX/BDX_human.md --distill_si_only skip --llm_base_url "http://..." --llm_model "model"
+    ```
+    Если файл содержит только System Instruction без ходов диалога (ручная очистка владельца), в режиме `document` создаётся структурированный документ базы знаний с `chunks: 0`, дословным сохранением инструкции и метаданными synthesis за один вызов LLM.
 
 #### Верификация качества и целостности
 
