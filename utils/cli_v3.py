@@ -334,6 +334,12 @@ def _add_distill_options(p):
                    help="Перезаписать готовые _distilled.md. Без флага: готовые пропускаются, не ошибка.")
     p.add_argument("--llm_no_stream", action="store_true",
                    help="Отключить streaming (SSE) при запросах к LLM (по умолчанию стриминг включён).")
+    p.add_argument("--distill_strict", action="store_true",
+                   help="Строгий режим: ошибка при неполном покрытии ходов или проблемах с якорями. Файл не записывается, кэш чанков сохраняется.")
+    p.add_argument("--distill_si_only", choices=["document", "skip"], default="document",
+                   help="Что делать с чатами, содержащими только System Instruction (без ходов): "
+                        "document — дистиллировать как документ (по умолчанию), "
+                        "skip — пропустить с ошибкой exit=2.")
 
 
 def build_distill_config(args, output_dir=None):
@@ -352,6 +358,8 @@ def build_distill_config(args, output_dir=None):
     cfg.assume_yes = bool(getattr(args, "yes", False) or getattr(args, "assume_yes", False))
     cfg.overwrite = bool(getattr(args, "distill_overwrite", False))
     cfg.llm_stream = not bool(getattr(args, "llm_no_stream", False))
+    cfg.strict = bool(getattr(args, "distill_strict", False))
+    cfg.si_only = getattr(args, "distill_si_only", "document") or "document"
     cfg.output_dir = output_dir or getattr(args, "output_dir", None)
     return cfg
 
@@ -393,16 +401,19 @@ def run_distill_batch(human_files, args, output_dir=None):
             return
 
     preps = []
+    si_only_files = []
     for path in to_process:
         try:
-            distill_pipeline.validate_turn_headers(path)
+            distill_pipeline.validate_turn_headers(path, cfg)
             prep = distill_pipeline.prepare(path, cfg)
             preps.append((path, prep))
+        except distill_pipeline._SIOnlySignal:
+            si_only_files.append(path)
         except distill_pipeline.DistillError as e:
             print(f"{RED}Ошибка: {e}{RESET}", file=sys.stderr)
             sys.exit(e.exit_code)
 
-    if not preps:
+    if not preps and not si_only_files:
         return
 
     print(f"{BOLD}План дистилляции:{RESET}")
@@ -415,7 +426,9 @@ def run_distill_batch(human_files, args, output_dir=None):
         if prep.redaction_counts:
             print(f"    редакция секретов: {prep.redaction_counts}")
         total_tokens += prep.estimated_input_tokens
-    print(f"Итого: файлов={len(preps)}, ~вход={total_tokens} токенов")
+    for path in si_only_files:
+        print(f"  {os.path.basename(path)}: режим=SI-документ")
+    print(f"Итого: файлов={len(preps) + len(si_only_files)}, ~вход={total_tokens} токенов")
 
     if total_tokens > cfg.max_total_input_tokens:
         print(f"{RED}Отказ: оценка входа {total_tokens} > лимита {cfg.max_total_input_tokens}.{RESET}", file=sys.stderr)
@@ -436,6 +449,13 @@ def run_distill_batch(human_files, args, output_dir=None):
             distill_pipeline.distill_human_markdown(path, cfg)
         except distill_pipeline.DistillError as e:
             print(f"{RED}Ошибка дистилляции {os.path.basename(path)}: {e}{RESET}", file=sys.stderr)
+            sys.exit(e.exit_code)
+
+    for path in si_only_files:
+        try:
+            distill_pipeline.distill_si_document(path, cfg)
+        except distill_pipeline.DistillError as e:
+            print(f"{RED}Ошибка дистилляции SI {os.path.basename(path)}: {e}{RESET}", file=sys.stderr)
             sys.exit(e.exit_code)
 
 

@@ -55,11 +55,18 @@ class DistillCache:
             return None
         try:
             with open(p, "r", encoding="utf-8") as f:
-                return json.load(f).get("content")
+                content = json.load(f).get("content")
+            # Treat empty/whitespace-only cached content as a miss (poisoned cache protection)
+            if content is None or not content.strip():
+                return None
+            return content
         except Exception:
             return None
 
     def put(self, key: str, content: str) -> None:
+        # Never cache empty or whitespace-only content
+        if not content or not content.strip():
+            return
         with open(self._path(key), "w", encoding="utf-8") as f:
             json.dump({"content": content}, f, ensure_ascii=False)
 
@@ -104,7 +111,10 @@ def chat_completion(base_url: str, model: str, prompt: str,
             if choice.get("finish_reason") != "stop":
                 raise ChunkFailedError(
                     f"finish_reason={choice.get('finish_reason')!r}")
-            return choice["message"]["content"]
+            content = choice["message"]["content"]
+            if not content or not content.strip():
+                raise ChunkFailedError("empty response")
+            return content
 
         # Streaming mode (stream=True)
         collected_content = []
@@ -180,6 +190,9 @@ def chat_completion(base_url: str, model: str, prompt: str,
 
         if last_finish_reason != "stop":
             raise ChunkFailedError(f"finish_reason={last_finish_reason!r}")
-        return "".join(collected_content)
+        result = "".join(collected_content)
+        if not result.strip():
+            raise ChunkFailedError("empty response")
+        return result
 
     raise LLMFatalError("unreachable")

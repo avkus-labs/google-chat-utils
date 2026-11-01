@@ -32,6 +32,7 @@ Mark every decision, fix and factual claim that comes from the model with exactl
 - [опровергнуто] — it was tried and did not work, or the user rejected it.
 - [не проверено] — it is stated as unverified in the text itself.
 A status never gets upgraded: a model's advice does not become a decision until the user confirms it. If the confirmation is in a later turn, give the status of the latest state and cite both turns.
+Special rule: if the fragment contains no user turns, or a pipeline note states that user replies were removed, the status [подтверждено] must NOT be used. Everything that originates from the model is marked [предложено моделью], regardless of how confident the model sounds.
 </status_marks>
 
 <rules>

@@ -122,14 +122,14 @@ def interactive_parse(handlers: Dict[str, Callable[[Any], None]]):
         distill_max_chunks=None,
         distill_thoughts="drop",
         llm_no_stream=False,
+        distill_strict=False,
+        distill_si_only="document",
         distill_preset=None,
         distill_concurrency=None,
         distill_retries=None,
         force=False
     )
     handlers["parse"](args)
-
-
 def interactive_reconstruct(handlers: Dict[str, Callable[[Any], None]]):
     print(f"\n{BOLD}{BLUE}--- 2. Реконструкция Python кода Gemini API ---{RESET}")
     input_json = prompt_input("Путь к входному JSON", default="output_data/Example/Example_intermediate.json")
@@ -217,6 +217,8 @@ def interactive_distill(handlers: Dict[str, Callable[[Any], None]]):
         distill_max_chunks=None,
         distill_thoughts="drop",
         llm_no_stream=False,
+        distill_strict=False,
+        distill_si_only="document",
         distill_preset=None,
         distill_concurrency=None,
         distill_retries=None,

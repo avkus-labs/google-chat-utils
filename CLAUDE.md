@@ -140,11 +140,11 @@ The repository parses Google AI Studio chat session exports, converts them into 
   - `google_studio_parser.py`: Implements `GoogleAIStudioJSONParser`. Normalizes raw chat chunks, extracts system instructions and role turns (user/model), checks for companion override files (`.si` system instruction, `.fi` first input, `.li` last input), and generates both RAG Markdown (`_raw_rag.md`, `_human.md`) and intermediate JSON (`_intermediate.json`).
 
 - **`utils/distillation/` (LLM-based Compression & RAG Preparation):**
-  - `pipeline.py`: Orchestrates multi-step distillation: secret redaction, turn-boundary chunking, LLM execution with disk caching, and verification.
+  - `pipeline.py`: Orchestrates multi-step distillation: secret redaction, turn-boundary chunking, LLM execution with disk caching, verification, `--distill_strict` enforcement, and SI-only document mode.
   - `redactor.py`: Redacts 11 patterns of sensitive tokens/keys before LLM invocation.
   - `chunker.py`: Splits large dialogs into turn-aligned chunks preserving code blocks.
-  - `verifier.py`: Ensures code blocks are verbatim, turn coverage is complete, and no secrets leak into output.
-  - `llm_client.py`: OpenAI-compatible HTTP client with SSE streaming (`httpx.stream`) by default, `--llm_no_stream` fallback, and deterministic caching in `.distill_cache/`.
+  - `verifier.py`: Deterministic verification: honest statuses (`ok`, `warning`, `error`), compact frontmatter verification block, anchor stub / range validation, line-by-line code block provenance (>30% missing lines check), and secret leak prevention.
+  - `llm_client.py`: OpenAI-compatible HTTP client with SSE streaming (`httpx.stream`) by default, `--llm_no_stream` fallback, empty response guard (`ChunkFailedError`), and poison-resistant caching in `.distill_cache/`.
 
 - **`utils/drive/` (Google Drive OAuth & Fetching):**
   - `auth.py`: OAuth2 token retrieval and auto-refresh using environment variables (`GDRIVE_REFRESH_TOKEN`, etc.) or `.gdrive_token.json`.

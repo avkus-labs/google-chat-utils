@@ -32,6 +32,23 @@ class DistillError(Exception):
         self.exit_code = exit_code
 
 
+class _SIOnlySignal(Exception):
+    """Internal signal: file is SI-only, should be routed to distill_si_document."""
+
+    def __init__(self, path: str):
+        super().__init__(path)
+        self.path = path
+
+
+def is_si_only(text: str) -> bool:
+    """True if file has ### System Instruction but no ### **User**/### **Model** turns."""
+    text_no_thoughts = chunker.remove_thoughts(text)
+    _, si = chunker.extract_and_omit_system_instruction(text_no_thoughts)
+    if si is None:
+        return False
+    return "### **User**" not in text_no_thoughts and "### **Model**" not in text_no_thoughts
+
+
 @dataclass
 class DistillConfig:
     llm_base_url: str = ""
@@ -48,6 +65,8 @@ class DistillConfig:
     overwrite: bool = False                 # --distill_overwrite: allow overwriting existing _distilled.md
     output_dir: Optional[str] = None        # None = next to input file
     llm_stream: bool = True                 # stream LLM responses (disable via --llm_no_stream)
+    strict: bool = False                    # --distill_strict: error on missed turns or anchor issues
+    si_only: str = "document"              # --distill_si_only: document|skip
     log: callable = print
 
     @property
@@ -68,13 +87,25 @@ class PreparedInput:
     redaction_counts: Dict[str, int]
     estimated_input_tokens: int
     chunks: List[str] = field(default_factory=list)
+    no_user_replies: bool = False   # True when no ### **User** headers found (006.D)
 
 
-def validate_turn_headers(path: str) -> None:
-    """A human.md without ### **User**/### **Model** headers is not distillable."""
+def validate_turn_headers(path: str, cfg: "DistillConfig" = None) -> None:
+    """A human.md without ### **User**/### **Model** headers is not distillable.
+
+    For SI-only files (System Instruction present, no turns):
+      - si_only='document': do NOT raise (007 handles separately)
+      - si_only='skip': raise DistillError with exit_code=2
+    """
     with open(path, "r", encoding="utf-8") as f:
         head = f.read(200_000)
-    if "### **User**" not in head and "### **Model**" not in head:
+    has_turns = "### **User**" in head or "### **Model**" in head
+    has_si = "### System Instruction" in head
+    if not has_turns:
+        si_only_mode = (cfg.si_only if cfg is not None else "skip")
+        if has_si and si_only_mode == "document":
+            # SI-only document mode: signal to caller via special exception
+            raise _SIOnlySignal(path)
         raise DistillError(
             f"В файле нет заголовков '### **User**' / '### **Model**': {path}",
             exit_code=2,
@@ -92,12 +123,32 @@ def prepare(input_path: str, cfg: DistillConfig) -> PreparedInput:
     if cfg.distill_thoughts == "drop":
         text = chunker.remove_thoughts(text)
 
+    # 006.D: detect chats where all user replies were manually removed
+    no_user_replies = "### **User**" not in text
+
+    # 006.D: if no user replies, prepend pipeline note (do NOT add virtual turns)
+    if no_user_replies:
+        pipeline_note = (
+            "[примечание пайплайна: в диалоге нет реплик пользователя "
+            "(удалены при ручной очистке); подтверждений со стороны пользователя нет]\n\n"
+        )
+        text = pipeline_note + text
+
     text, counts = redact_secrets(text)
     text, turn_count = chunker.number_turns(text)
 
     if turn_count == 0:
         raise DistillError(
             f"После нумерации не найдено ни одного хода: {input_path}", exit_code=2)
+
+    # 006.D: skip files with < 200 chars of turn content (after stripping headers)
+    import re as _re
+    _header_re = _re.compile(r"^### \*\*(?:User|Model)\*\*.*$", _re.MULTILINE)
+    body_content = _header_re.sub("", text).strip()
+    if len(body_content) < 200:
+        raise DistillError(
+            f"Нет содержимого для дистилляции (суммарный текст ходов < 200 символов): {input_path}",
+            exit_code=2)
 
     chunks = chunker.chunk_markdown(text, cfg.chunk_tokens)
     est_tokens = sum(estimate_tokens(c) for c in chunks)
@@ -112,14 +163,16 @@ def prepare(input_path: str, cfg: DistillConfig) -> PreparedInput:
         redaction_counts=counts,
         estimated_input_tokens=est_tokens,
         chunks=chunks,
+        no_user_replies=no_user_replies,
     )
 
 
 def plan_line(input_path: str, prep: PreparedInput) -> str:
     est_out = sum(estimate_tokens(c) for c in prep.chunks) // 5  # rough 20% of input
+    suffix = " ⚠ нет реплик пользователя" if prep.no_user_replies else ""
     return (f"  {os.path.basename(input_path)}: ходов={prep.turn_count}, "
             f"чанков={len(prep.chunks)}, "
-            f"~вход={prep.estimated_input_tokens} ток., ~выход={est_out} ток.")
+            f"~вход={prep.estimated_input_tokens} ток., ~выход={est_out} ток.{suffix}")
 
 
 def distill_human_markdown(input_path: str, cfg: DistillConfig) -> Optional[str]:
@@ -129,7 +182,10 @@ def distill_human_markdown(input_path: str, cfg: DistillConfig) -> Optional[str]
     Raises DistillError for fatal problems.
     """
     log = cfg.log
-    validate_turn_headers(input_path)
+    try:
+        validate_turn_headers(input_path, cfg)
+    except _SIOnlySignal:
+        return distill_si_document(input_path, cfg)
 
     stem = os.path.basename(input_path)
     if stem.endswith("_human.md"):
@@ -205,6 +261,9 @@ def distill_human_markdown(input_path: str, cfg: DistillConfig) -> Optional[str]
                 cfg.llm_base_url, cfg.synthesis_model, synth_prompt, api_key, stream=cfg.llm_stream)
         except LLMFatalError as e:
             raise DistillError(f"Ошибка LLM на synthesis: {e}", exit_code=1)
+        # 006.A: check synthesis for empty response
+        if not meta_json or not meta_json.strip():
+            raise DistillError("Synthesis вернул пустой ответ.", exit_code=1)
         cache.put(synth_key, meta_json)
 
     meta = _parse_json_with_retry(meta_json, cfg)
@@ -213,6 +272,18 @@ def distill_human_markdown(input_path: str, cfg: DistillConfig) -> Optional[str]
     verification = verify(
         _frontmatter_only(meta, input_path, prep, cfg) + "\n" + body,
         prep.text, prep.turn_count)
+
+    # 006.B: --distill_strict: abort if coverage < 100% or anchor issues
+    if cfg.strict:
+        tc = verification.get("turn_coverage", {})
+        missed = tc.get("missed", []) if isinstance(tc, dict) else []
+        anchor_issues = verification.get("anchor_issues", 0)
+        if missed or anchor_issues:
+            raise DistillError(
+                f"--distill_strict: верификатор нашёл проблемы "
+                f"(пропущено ходов: {len(missed)}, якорей с ошибками: {anchor_issues}). "
+                f"Файл не записан, кэш чанков сохранён.",
+                exit_code=2)
 
     final = render_distilled(meta, body, verification, input_path, prep, cfg)
     # Atomic write: write to tmp, then replace (old file stays intact on error)
@@ -316,7 +387,8 @@ def _to_yaml(obj, indent: int = 0) -> str:
     return "\n".join(lines)
 
 
-def render_distilled(meta, body, verification, input_path, prep, cfg) -> str:
+def render_distilled(meta, body, verification, input_path, prep, cfg,
+                     source_kind: str = "dialog") -> str:
     now = _utc_now()
     fm_lines = [
         "---",
@@ -334,18 +406,24 @@ def render_distilled(meta, body, verification, input_path, prep, cfg) -> str:
         f"original_source: {json.dumps(os.path.basename(input_path), ensure_ascii=False)}",
         f"source_sha256: {prep.source_hash}",
         f"chunks: {len(prep.chunks)}",
-        f"description: {json.dumps(meta.get('summary', ''), ensure_ascii=False)}",
-        f"resolution: {json.dumps(meta.get('resolution', ''), ensure_ascii=False)}",
-        "keywords:",
     ])
+    if source_kind != "dialog":
+        fm_lines.append(f"source_kind: {json.dumps(source_kind, ensure_ascii=False)}")
+    fm_lines.extend([
+        f"description: {json.dumps(meta.get('summary', ''), ensure_ascii=False)}",
+    ])
+    if source_kind == "dialog":
+        fm_lines.extend([
+            f"resolution: {json.dumps(meta.get('resolution', ''), ensure_ascii=False)}",
+        ])
+    fm_lines.append("keywords:")
     for k in meta.get("keywords", []):
         fm_lines.append(f"  - {json.dumps(str(k), ensure_ascii=False)}")
     fm_lines.append("tags:")
     for t in meta.get("tags", []):
         fm_lines.append(f"  - {json.dumps(str(t), ensure_ascii=False)}")
-    fm_lines.append("verification:")
-    fm_lines.append(f"  status: {json.dumps(verification.get('status'), ensure_ascii=False)}")
-    fm_lines.append(f"  length_ratio: {verification.get('length_ratio')}")
+    # 006.B: compact verification block
+    fm_lines.extend(_render_verification_fm(verification, source_kind))
     fm_lines.append("---")
 
     sections = ["", "# " + str(meta.get("title", "Distilled")), "",
@@ -353,13 +431,52 @@ def render_distilled(meta, body, verification, input_path, prep, cfg) -> str:
                 body, "",
                 "## Ключевая информация", ""]
     sections += _kv_section("Решения", meta.get("decisions_made", []))
-    sections += _kv_section("Неудачные подходы", meta.get("failed_approaches", []))
-    sections += _kv_section("Сигнатуры ошибок", meta.get("error_signatures", []))
+    if source_kind == "dialog":
+        sections += _kv_section("Неудачные подходы", meta.get("failed_approaches", []))
+        sections += _kv_section("Сигнатуры ошибок", meta.get("error_signatures", []))
     sections += _kv_section("Уроки", meta.get("lessons_learned", []))
     sections += _kv_section("Темы", meta.get("topics_covered", []))
     sections += _kv_section("Открытые вопросы", meta.get("open_questions", []))
 
     return "\n".join(fm_lines) + "\n" + "\n".join(sections) + "\n"
+
+
+def _render_verification_fm(verification: Dict, source_kind: str = "dialog") -> List[str]:
+    """Render compact verification: block for frontmatter (006.B)."""
+    lines = ["verification:"]
+    lines.append(f"  status: {json.dumps(verification.get('status'), ensure_ascii=False)}")
+    if source_kind == "dialog":
+        # turn_coverage: compact
+        tc = verification.get("turn_coverage", {})
+        if isinstance(tc, dict):
+            missed = tc.get("missed", [])
+            covered = tc.get("covered")
+            if missed:
+                ranges = _compress_ranges(missed)
+                lines.append(f"  turn_coverage: \"пропущено {len(missed)}, диапазоны: {ranges}\"")
+            elif covered is not None:
+                lines.append(f"  turn_coverage: \"ok, покрыто {covered}\"")
+            else:
+                w = tc.get("warning", "")
+                lines.append(f"  turn_coverage: {json.dumps(w, ensure_ascii=False)}")
+        # anchor_issues
+        ai = verification.get("anchor_issues", 0)
+        if ai:
+            lines.append(f"  anchor_issues: {ai}")
+        # code_blocks
+        cb = verification.get("code_blocks", {})
+        if isinstance(cb, dict) and cb.get("suspicious"):
+            n_susp = len(cb["suspicious"])
+            n_total = cb.get("total", "?")
+            lines.append(f"  code_blocks: \"{n_susp} подозрительных из {n_total}\"")
+        # length_ratio
+        lr = verification.get("length_ratio")
+        if lr is not None:
+            lines.append(f"  length_ratio: {lr}")
+    else:
+        # SI-only: only secrets info
+        pass
+    return lines
 
 
 def _kv_section(title: str, items) -> List[str]:
@@ -372,16 +489,184 @@ def _kv_section(title: str, items) -> List[str]:
     return out
 
 
+def _compress_ranges(nums: List[int]) -> str:
+    """Compress a sorted list of ints into human-readable ranges like '1-9, 43-54, 64'."""
+    if not nums:
+        return ""
+    ranges = []
+    start = end = nums[0]
+    for n in nums[1:]:
+        if n == end + 1:
+            end = n
+        else:
+            ranges.append(f"{start}-{end}" if start != end else str(start))
+            start = end = n
+    ranges.append(f"{start}-{end}" if start != end else str(start))
+    return ", ".join(ranges)
+
+
 def _print_verification(v: Dict, log) -> None:
     log("  Верификация:")
-    for key, val in v.items():
-        if key in ("status", "length_ratio"):
-            continue
-        if isinstance(val, dict):
-            if "ok" in val:
-                log(f"    {key}: OK")
-            elif "warning" in val:
-                log(f"    {key}: ⚠️ {val['warning']}")
+    # turn_coverage
+    tc = v.get("turn_coverage", {})
+    if isinstance(tc, dict):
+        if tc.get("ok"):
+            log(f"    turn_coverage: OK (покрыто {tc.get('covered')})")
+        elif "warning" in tc:
+            missed = tc.get("missed", [])
+            if missed:
+                ranges = _compress_ranges(sorted(missed))
+                log(f"    turn_coverage: ⚠️ {tc['warning']}, диапазоны: {ranges}")
             else:
-                log(f"    {key}: 🔴 {val}")
+                log(f"    turn_coverage: ⚠️ {tc['warning']}")
+    # anchor_issues
+    ai = v.get("anchor_issues", 0)
+    if ai:
+        log(f"    anchor_issues: ⚠️ {ai} якорей с ошибками")
+    # code_blocks
+    cb = v.get("code_blocks", {})
+    if isinstance(cb, dict):
+        if cb.get("ok"):
+            log("    code_blocks: OK")
+        elif cb.get("suspicious"):
+            log(f"    code_blocks: ⚠️ блоки {cb['suspicious']} подозрительны")
+    # secrets
+    sec = v.get("secrets", {})
+    if isinstance(sec, dict) and not sec.get("ok"):
+        log(f"    secrets: 🔴 {sec}")
     log(f"    length_ratio: {v.get('length_ratio')}, status: {v.get('status')}")
+
+
+def distill_si_document(input_path: str, cfg: DistillConfig) -> Optional[str]:
+    """Distill an SI-only file (no User/Model turns) as a document (task 007).
+
+    Returns the path of the written _distilled.md, or None in dry-run.
+    Raises DistillError for fatal problems.
+    """
+    log = cfg.log
+
+    stem = os.path.basename(input_path)
+    if stem.endswith("_human.md"):
+        stem = stem[:-len("_human.md")]
+    elif stem.endswith(".md"):
+        stem = stem[:-3]
+
+    out_dir = cfg.output_dir or os.path.dirname(os.path.abspath(input_path))
+    os.makedirs(out_dir, exist_ok=True)
+    out_path = os.path.join(out_dir, f"{stem}_distilled.md")
+    if os.path.exists(out_path) and not getattr(cfg, "overwrite", False):
+        raise DistillError(
+            f"Файл уже существует, перезапись запрещена (удалите вручную): {out_path}")
+
+    with open(input_path, "r", encoding="utf-8") as f:
+        raw = f.read()
+    source_hash = hashlib.sha256(raw.encode("utf-8")).hexdigest()
+
+    # Extract SI text (keep it verbatim, do NOT omit it)
+    _, si_text = chunker.extract_and_omit_system_instruction(raw)
+    if not si_text:
+        raise DistillError(f"SI-only файл не содержит секции System Instruction: {input_path}")
+
+    si_text, counts = redact_secrets(si_text)
+
+    # Token size check
+    si_tokens = estimate_tokens(si_text)
+    if si_tokens > cfg.chunk_tokens:
+        raise DistillError(
+            f"Документ слишком большой для режима SI-only ({si_tokens} > {cfg.chunk_tokens} ток.); "
+            f"нужна ручная обработка: {input_path}")
+
+    # plan_line equivalent for SI-only
+    plan = (f"  {os.path.basename(input_path)}: режим=SI-документ, "
+            f"~вход={si_tokens} ток.")
+    log(plan)
+    log(f"  модели: synthesis={cfg.synthesis_model}")
+    if counts:
+        log(f"  редакция секретов: {counts}")
+
+    if cfg.dry_run:
+        log("  [dry-run] вызовы LLM пропущены.")
+        return None
+
+    # One synthesis call to get metadata
+    synth_tpl = _load_prompt(cfg.prompt_dir, SYNTHESIS_PROMPT_NAME)
+    api_key = os.environ.get(cfg.llm_api_key_env, "")
+    cache = DistillCache(os.path.join(out_dir, ".distill_cache"))
+
+    synth_prompt = synth_tpl + f'\n\n<distilled_text kind="document">\n{si_text}\n</distilled_text>'
+    synth_key = cache_key(si_text, synth_tpl, cfg.synthesis_model, cfg.llm_base_url)
+    meta_json = cache.get(synth_key)
+    if meta_json is None:
+        log("  synthesis: вызов LLM...")
+        try:
+            meta_json = chat_completion(
+                cfg.llm_base_url, cfg.synthesis_model, synth_prompt, api_key, stream=cfg.llm_stream)
+        except LLMFatalError as e:
+            raise DistillError(f"Ошибка LLM на synthesis (SI-документ): {e}", exit_code=1)
+        if not meta_json or not meta_json.strip():
+            raise DistillError("Synthesis вернул пустой ответ (SI-документ).", exit_code=1)
+        cache.put(synth_key, meta_json)
+
+    meta = _parse_json_with_retry(meta_json, cfg)
+
+    # Verification: only secrets (no turn coverage for SI-only)
+    from utils.distillation.verifier import verify as _verify
+    verification = _verify(si_text, raw, 0, source_kind="system_instruction")
+
+    # Build the _distilled.md
+    now = _utc_now()
+    fm_lines = [
+        "---",
+        "type: source",
+        f"title: {json.dumps(meta.get('title', os.path.basename(input_path)), ensure_ascii=False)}",
+        "status: active",
+        "trust_tier: ai-generated",
+        "generated:",
+        f"  by: {json.dumps(cfg.synthesis_model, ensure_ascii=False)}",
+        f"  at: {json.dumps(now)}",
+        f"original_source: {json.dumps(os.path.basename(input_path), ensure_ascii=False)}",
+        f"source_sha256: {source_hash}",
+        "chunks: 0",
+        "source_kind: system_instruction",
+        f"description: {json.dumps(meta.get('summary', ''), ensure_ascii=False)}",
+        "keywords:",
+    ]
+    for k in meta.get("keywords", []):
+        fm_lines.append(f"  - {json.dumps(str(k), ensure_ascii=False)}")
+    fm_lines.append("tags:")
+    for t in meta.get("tags", []):
+        fm_lines.append(f"  - {json.dumps(str(t), ensure_ascii=False)}")
+    fm_lines.extend(_render_verification_fm(verification, source_kind="system_instruction"))
+    fm_lines.append("---")
+
+    title = meta.get("title", os.path.basename(input_path))
+    summary = meta.get("summary", "")
+    sections = ["", f"# {title}", "", summary, "",
+                "## System Instruction", "",
+                si_text, "",
+                "## Ключевая информация", ""]
+    sections += _kv_section("Решения", meta.get("decisions_made", []))
+    sections += _kv_section("Уроки", meta.get("lessons_learned", []))
+    sections += _kv_section("Темы", meta.get("topics_covered", []))
+    sections += _kv_section("Открытые вопросы", meta.get("open_questions", []))
+
+    final = "\n".join(fm_lines) + "\n" + "\n".join(sections) + "\n"
+
+    tmp_path = out_path + ".tmp"
+    try:
+        with open(tmp_path, "w", encoding="utf-8") as f:
+            f.write(final)
+        os.replace(tmp_path, out_path)
+    except Exception:
+        if os.path.exists(tmp_path):
+            os.remove(tmp_path)
+        raise
+    log(f"  💾 Записан (SI-документ): {out_path}")
+
+    verification2 = _verify(final, raw, 0, source_kind="system_instruction")
+    _print_verification(verification2, log)
+    if verification2["status"] == "error":
+        raise DistillError(
+            "Верификатор нашёл секреты в _distilled.md SI-документ (файл записан).",
+            exit_code=1)
+    return out_path

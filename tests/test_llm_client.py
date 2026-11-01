@@ -219,13 +219,88 @@ class TestChatCompletionStream:
 
     @patch("utils.distillation.llm_client.httpx.stream")
     def test_empty_content_with_finish_reason_stop(self, mock_stream):
+        """006.A: stream returns finish_reason=stop but no content => ChunkFailedError."""
         lines = [
             'data: {"choices": [{"delta": {}, "finish_reason": "stop"}]}',
             "data: [DONE]",
         ]
         mock_stream.return_value = MockStreamResponse(200, lines=lines)
-        out = chat_completion("http://x", "m", "p")
-        assert out == ""
+        with pytest.raises(ChunkFailedError, match="empty response"):
+            chat_completion("http://x", "m", "p")
+
+
+class TestEmptyResponseIntegrity:
+    """006.A: empty response = ChunkFailedError, not cached."""
+
+    @patch("utils.distillation.llm_client.httpx.post")
+    def test_empty_content_non_stream_raises(self, mock_post):
+        """006.A: non-stream empty content → ChunkFailedError."""
+        mock_post.return_value = _mock_response(200, {
+            "choices": [{"finish_reason": "stop", "message": {"content": ""}}]
+        })
+        with pytest.raises(ChunkFailedError, match="empty response"):
+            chat_completion("http://x", "m", "p", stream=False)
+
+    @patch("utils.distillation.llm_client.httpx.post")
+    def test_whitespace_only_non_stream_raises(self, mock_post):
+        """006.A: non-stream whitespace-only content → ChunkFailedError."""
+        mock_post.return_value = _mock_response(200, {
+            "choices": [{"finish_reason": "stop", "message": {"content": "   \n"}}]
+        })
+        with pytest.raises(ChunkFailedError, match="empty response"):
+            chat_completion("http://x", "m", "p", stream=False)
+
+    @patch("utils.distillation.llm_client.httpx.stream")
+    def test_whitespace_only_stream_raises(self, mock_stream):
+        """006.A: stream whitespace-only content → ChunkFailedError."""
+        lines = [
+            'data: {"choices": [{"delta": {"content": "   "}, "finish_reason": null}]}',
+            'data: {"choices": [{"delta": {}, "finish_reason": "stop"}]}',
+            "data: [DONE]",
+        ]
+        mock_stream.return_value = MockStreamResponse(200, lines=lines)
+        with pytest.raises(ChunkFailedError, match="empty response"):
+            chat_completion("http://x", "m", "p")
+
+
+class TestCacheIntegrity:
+    """006.A: cache protects against poisoning with empty values."""
+
+    def test_put_empty_string_not_stored(self, tmp_path):
+        cache = DistillCache(str(tmp_path / ".cache"))
+        cache.put("k", "")
+        assert cache.get("k") is None
+
+    def test_put_whitespace_not_stored(self, tmp_path):
+        cache = DistillCache(str(tmp_path / ".cache"))
+        cache.put("k", "   \n")
+        assert cache.get("k") is None
+
+    def test_get_empty_cached_value_is_miss(self, tmp_path):
+        """006.A: pre-existing poisoned cache (empty string) is treated as miss."""
+        import json as _json
+        cache_dir = tmp_path / ".cache"
+        cache_dir.mkdir()
+        (cache_dir / "poisoned.json").write_text(
+            _json.dumps({"content": ""}), encoding="utf-8"
+        )
+        cache = DistillCache(str(cache_dir))
+        assert cache.get("poisoned") is None
+
+    def test_get_whitespace_cached_value_is_miss(self, tmp_path):
+        import json as _json
+        cache_dir = tmp_path / ".cache"
+        cache_dir.mkdir()
+        (cache_dir / "ws.json").write_text(
+            _json.dumps({"content": "  \n"}), encoding="utf-8"
+        )
+        cache = DistillCache(str(cache_dir))
+        assert cache.get("ws") is None
+
+    def test_valid_content_cached_and_retrieved(self, tmp_path):
+        cache = DistillCache(str(tmp_path / ".cache"))
+        cache.put("k", "valid content")
+        assert cache.get("k") == "valid content"
 
 
 class TestCacheKey:

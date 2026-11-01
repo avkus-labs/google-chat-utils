@@ -2,7 +2,7 @@
 type: task
 id: "006"
 slug: distill-integrity
-status: open
+status: completed
 executor: Antigravity
 repo: avkus-labs/google-chat-utils
 branch: feature/distill-integrity-006
