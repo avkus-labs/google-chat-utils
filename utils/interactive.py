@@ -109,14 +109,23 @@ def interactive_parse(handlers: Dict[str, Callable[[Any], None]]):
         log_to_memory=log_to_memory,
         distill=distill,
         distill_overwrite=distill_overwrite,
+        distill_dry_run=False,
+        dry_run=False,
+        yes=False,
         llm_base_url=llm_base_url,
         llm_model=llm_model,
         llm_synthesis_model=llm_synthesis_model,
+        llm_api_key_env=os.getenv("DISTILL_API_KEY_ENV", "DISTILL_API_KEY"),
+        distill_prompt_dir="prompts",
+        chunk_tokens=30000,
+        max_total_input_tokens=400000,
+        distill_max_chunks=None,
+        distill_thoughts="drop",
+        llm_no_stream=False,
         distill_preset=None,
         distill_concurrency=None,
         distill_retries=None,
-        force=False,
-        dry_run=False
+        force=False
     )
     handlers["parse"](args)
 
@@ -198,11 +207,20 @@ def interactive_distill(handlers: Dict[str, Callable[[Any], None]]):
         llm_model=llm_model,
         llm_synthesis_model=llm_synthesis_model,
         distill_overwrite=distill_overwrite,
+        distill_dry_run=dry_run,
+        dry_run=dry_run,
+        yes=False,
+        llm_api_key_env=os.getenv("DISTILL_API_KEY_ENV", "DISTILL_API_KEY"),
+        distill_prompt_dir="prompts",
+        chunk_tokens=30000,
+        max_total_input_tokens=400000,
+        distill_max_chunks=None,
+        distill_thoughts="drop",
+        llm_no_stream=False,
         distill_preset=None,
         distill_concurrency=None,
         distill_retries=None,
-        force=False,
-        dry_run=dry_run
+        force=False
     )
     handlers["distill"](args)
 

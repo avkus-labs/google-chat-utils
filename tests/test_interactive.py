@@ -4,7 +4,9 @@ from utils.interactive import (
     prompt_bool,
     run_interactive_menu,
     interactive_validate,
+    interactive_distill,
 )
+from utils.cli_v3 import build_distill_config
 
 
 def test_prompt_input_default():
@@ -52,4 +54,41 @@ def test_run_interactive_menu_exit():
     with patch("builtins.input", return_value="0"):
         # Should cleanly exit without loop
         run_interactive_menu(handlers)
+
+
+def test_interactive_distill_builds_valid_config():
+    captured_args = []
+    handlers = {"distill": lambda args: captured_args.append(args)}
+
+    # Inputs:
+    # 1. is_dir (y)
+    # 2. input_dir ("output_data")
+    # 3. llm_base_url ("http://mock:8000/v1")
+    # 4. llm_model ("model-test")
+    # 5. llm_synthesis_model ("")
+    # 6. dry_run (y)
+    # 7. distill_overwrite (n)
+    inputs = [
+        "y",
+        "output_data",
+        "http://mock:8000/v1",
+        "model-test",
+        "",
+        "y",
+        "n",
+    ]
+    with patch("builtins.input", side_effect=inputs):
+        interactive_distill(handlers)
+
+    assert len(captured_args) == 1
+    args = captured_args[0]
+    # Verify build_distill_config works without any AttributeError
+    cfg = build_distill_config(args)
+    assert cfg.llm_base_url == "http://mock:8000/v1"
+    assert cfg.llm_model == "model-test"
+    assert cfg.llm_api_key_env == "DISTILL_API_KEY"
+    assert cfg.prompt_dir == "prompts"
+    assert cfg.dry_run is True
+    assert cfg.overwrite is False
+    assert cfg.llm_stream is True
 

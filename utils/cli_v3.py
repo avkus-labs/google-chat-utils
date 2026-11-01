@@ -339,20 +339,20 @@ def _add_distill_options(p):
 def build_distill_config(args, output_dir=None):
     """Собрать DistillConfig из аргументов CLI."""
     cfg = distill_pipeline.DistillConfig()
-    cfg.llm_base_url = args.llm_base_url
-    cfg.llm_model = args.llm_model
+    cfg.llm_base_url = getattr(args, "llm_base_url", "") or ""
+    cfg.llm_model = getattr(args, "llm_model", "") or ""
     cfg.llm_synthesis_model = getattr(args, "llm_synthesis_model", "") or ""
-    cfg.llm_api_key_env = args.llm_api_key_env
-    cfg.prompt_dir = args.distill_prompt_dir
-    cfg.chunk_tokens = args.chunk_tokens
-    cfg.max_total_input_tokens = args.max_total_input_tokens
-    cfg.max_chunks = args.distill_max_chunks
-    cfg.distill_thoughts = args.distill_thoughts
-    cfg.dry_run = args.distill_dry_run
-    cfg.assume_yes = args.yes
-    cfg.overwrite = getattr(args, "distill_overwrite", False)
-    cfg.llm_stream = not getattr(args, "llm_no_stream", False)
-    cfg.output_dir = output_dir
+    cfg.llm_api_key_env = getattr(args, "llm_api_key_env", "DISTILL_API_KEY") or "DISTILL_API_KEY"
+    cfg.prompt_dir = getattr(args, "distill_prompt_dir", "prompts") or "prompts"
+    cfg.chunk_tokens = getattr(args, "chunk_tokens", 30000)
+    cfg.max_total_input_tokens = getattr(args, "max_total_input_tokens", 400000)
+    cfg.max_chunks = getattr(args, "distill_max_chunks", None)
+    cfg.distill_thoughts = getattr(args, "distill_thoughts", "drop") or "drop"
+    cfg.dry_run = bool(getattr(args, "distill_dry_run", False) or getattr(args, "dry_run", False))
+    cfg.assume_yes = bool(getattr(args, "yes", False) or getattr(args, "assume_yes", False))
+    cfg.overwrite = bool(getattr(args, "distill_overwrite", False))
+    cfg.llm_stream = not bool(getattr(args, "llm_no_stream", False))
+    cfg.output_dir = output_dir or getattr(args, "output_dir", None)
     return cfg
 
 
