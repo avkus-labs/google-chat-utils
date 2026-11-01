@@ -5,7 +5,7 @@ import os
 from unittest.mock import patch, MagicMock
 import pytest
 
-from utils.cli_v3 import run_distill_batch, _add_distill_options
+from utils.cli_v3 import run_distill_batch, _add_distill_options, handle_distill
 from utils.distillation.pipeline import (
     DistillConfig,
     DistillError,
@@ -206,3 +206,48 @@ class TestCLIOptionsAndInteractive:
         mock_handler.assert_called_once()
         args = mock_handler.call_args[0][0]
         assert getattr(args, "distill_overwrite", None) is True
+
+
+def test_handle_distill_recursive_input_dir(tmp_path):
+    sub1 = tmp_path / "sub1"
+    sub1.mkdir()
+    h1 = sub1 / "chat1_human.md"
+    h1.write_text(SAMPLE_HUMAN_MD, encoding="utf-8")
+
+    sub2_deep = tmp_path / "sub2" / "deep"
+    sub2_deep.mkdir(parents=True)
+    h2 = sub2_deep / "chat2_human.md"
+    h2.write_text(SAMPLE_HUMAN_MD, encoding="utf-8")
+
+    cache_dir = tmp_path / ".distill_cache"
+    cache_dir.mkdir()
+    (cache_dir / "ignored_human.md").write_text(SAMPLE_HUMAN_MD, encoding="utf-8")
+
+    args = argparse.Namespace(
+        input_file=None,
+        input_dir=str(tmp_path),
+        output_dir=None,
+        llm_base_url="http://test",
+        llm_model="model",
+        llm_synthesis_model="",
+        llm_api_key_env="KEY",
+        distill_prompt_dir="prompts",
+        chunk_tokens=30000,
+        max_total_input_tokens=400000,
+        distill_max_chunks=None,
+        distill_thoughts="drop",
+        distill_overwrite=False,
+        distill_dry_run=True,
+        yes=True,
+    )
+
+    with patch("utils.cli_v3.run_distill_batch") as mock_batch:
+        handle_distill(args)
+
+    mock_batch.assert_called_once()
+    found_files = mock_batch.call_args[0][0]
+    assert len(found_files) == 2
+    normalized_found = [os.path.normpath(f) for f in found_files]
+    assert os.path.normpath(str(h1)) in normalized_found
+    assert os.path.normpath(str(h2)) in normalized_found
+    assert os.path.normpath(str(cache_dir / "ignored_human.md")) not in normalized_found

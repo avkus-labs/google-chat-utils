@@ -455,13 +455,17 @@ def handle_distill(args):
         if not os.path.isdir(args.input_dir):
             print(f"{RED}Ошибка: Директория не найдена: {args.input_dir}{RESET}", file=sys.stderr)
             sys.exit(2)
-        for filename in sorted(os.listdir(args.input_dir)):
-            if filename.endswith("_human.md"):
-                full = os.path.join(args.input_dir, filename)
-                if os.path.isfile(full):
-                    human_files.append(full)
+        for root, dirs, files in os.walk(args.input_dir):
+            # Пропускаем скрытые и кэш-директории (.distill_cache и т.п.)
+            dirs[:] = [d for d in dirs if not d.startswith(".")]
+            for filename in files:
+                if filename.endswith("_human.md"):
+                    full = os.path.join(root, filename)
+                    if os.path.isfile(full):
+                        human_files.append(full)
+        human_files.sort()
         if not human_files:
-            print(f"{YELLOW}В {args.input_dir} нет файлов *_human.md.{RESET}")
+            print(f"{YELLOW}В {args.input_dir} (и её поддиректориях) нет файлов *_human.md.{RESET}")
             return
     else:
         print("Ошибка: Необходимо указать --input_file или --input_dir для команды distill.", file=sys.stderr)
@@ -648,7 +652,7 @@ def main():
     distill_input_group.add_argument("--input_file", "-i", metavar="FILE_PATH",
                                      help="Путь к одному _human.md файлу.")
     distill_input_group.add_argument("--input_dir", "-d", metavar="DIR_PATH",
-                                     help="Директория с _human.md файлами (без рекурсии, только *_human.md).")
+                                     help="Директория с _human.md файлами (поиск выполняется рекурсивно).")
     distill_parser.add_argument("--output_dir", metavar="DIR_PATH", default=None,
                                 help="Папка для _distilled.md и кэша. По умолчанию: рядом со входным файлом.")
     _add_distill_options(distill_parser)
