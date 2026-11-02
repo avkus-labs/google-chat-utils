@@ -18,8 +18,10 @@ rows=[]
 ROOT=sys.argv[1] if len(sys.argv)>1 else 'output_data'
 OUT=sys.argv[2] if len(sys.argv)>2 else 'audit_distill.csv'
 for d in sorted(glob.glob(os.path.join(ROOT,'*/'))):
-    name=os.path.basename(d.rstrip('/'))
-    hs=glob.glob(d+'*_human.md'); ds=glob.glob(d+'*_distilled*.md')
+    name=os.path.basename(d.rstrip('/\\'))
+    hs=glob.glob(os.path.join(d, '*_human.md'))
+    exact_dist=os.path.join(d, f'{name}_distilled.md')
+    ds=[exact_dist] if os.path.exists(exact_dist) else glob.glob(os.path.join(d, '*_distilled.md'))
     r={'chat':name,'human':bool(hs),'distilled':len(ds)}
     if not hs or not ds: rows.append(r); continue
     h=open(hs[0],encoding='utf-8').read(); s=open(ds[0],encoding='utf-8').read()
@@ -27,7 +29,7 @@ for d in sorted(glob.glob(os.path.join(ROOT,'*/'))):
     has_turns=bool(re.search(r'^### \*\*(User|Model)\*\*',h,re.M))
     r['has_SI']='### System Instruction' in h; r['turn_headers']=len(re.findall(r'^### \*\*(User|Model)\*\*',h,re.M)); r['user_turns']=len(re.findall(r'^### \*\*User\*\*',h,re.M))
     ok,fm=V.parse_frontmatter(s)
-    body=s.split('\n---\n',2)[-1]
+    m_fm=re.match(r"^---\r?\n.*?\r?\n---\r?\n",s,re.DOTALL); body=s[m_fm.end():] if m_fm else s
     g=fm.get('generated',{}) if isinstance(fm,dict) else {}
     r['model']=g.get('by',''); r['synth']=fm.get('synthesis_model','') if isinstance(fm,dict) else ''
     r['chunks']=fm.get('chunks'); r['v_status']=(fm.get('verification') or {}).get('status'); r['ratio']=(fm.get('verification') or {}).get('length_ratio')

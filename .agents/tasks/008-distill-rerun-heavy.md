@@ -2,7 +2,7 @@
 type: task
 id: "008"
 slug: distill-rerun-heavy
-status: open
+status: completed
 executor: Antigravity (запуск на машине владельца, где доступен шлюз)
 repo: avkus-labs/google-chat-utils
 branch: feature/distill-rerun-008
